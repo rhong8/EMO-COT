@@ -1,16 +1,16 @@
 # EMO-COT Inference Code
 
-![Description of image](assets/1.pdf)
+![Model Diagram](https://github.com/jiachengQAQ/EMO-COT/blob/main/assets/1.png?raw=true)
 
 
 ## Training and Inference
 
 ```bash
-To fine-tune easop with grad-tts
-accelerate launch --config_file accelerate_cfg/1a4o_fp16.yaml train_scripts/train_easpo.py --config configs/easpo_-v1-5_4k-prompts_num-sam-4_10ep_bs10.py
+To build emotion graph on iemocap
+python iemocap/build_graph.py
 ```
 
 ```bash
-To inference easop with grad-tts
-python inference_scripts/inference.py
+To inference emotion with LALMs
+python eval_audio/evaluate_emotion_local.py --dataset iemocap --checkpoint Qwen/Qwen2-Audio-7B
 ```
