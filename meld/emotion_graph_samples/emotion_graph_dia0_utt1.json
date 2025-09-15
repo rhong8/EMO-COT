@@ -1,0 +1,44 @@
+{
+    "audio": [
+        {
+            "id": "1",
+            "feature": "pitch",
+            "value": "low"
+        },
+        {
+            "id": "2",
+            "feature": "rate",
+            "value": "fast"
+        },
+        {
+            "id": "3",
+            "feature": "volume",
+            "value": "soft"
+        }
+    ],
+    "text": [
+        {
+            "id": "4",
+            "content": "Oh. Thats so Monica can keep track. That way if one on them is missing, she can be like, Wheres number 27?!",
+            "keyword": "keep",
+            "sentiment": "negative"
+        }
+    ],
+    "relationships": [
+        {
+            "from": "1",
+            "to": "4",
+            "relation": "supports"
+        },
+        {
+            "from": "2",
+            "to": "4",
+            "relation": "conflicts"
+        },
+        {
+            "from": "3",
+            "to": "4",
+            "relation": "supports"
+        }
+    ]
+}

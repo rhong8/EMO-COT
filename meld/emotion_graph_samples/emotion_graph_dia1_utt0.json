@@ -1,0 +1,44 @@
+{
+    "audio": [
+        {
+            "id": "1",
+            "feature": "pitch",
+            "value": "low"
+        },
+        {
+            "id": "2",
+            "feature": "rate",
+            "value": "fast"
+        },
+        {
+            "id": "3",
+            "feature": "volume",
+            "value": "soft"
+        }
+    ],
+    "text": [
+        {
+            "id": "4",
+            "content": "Come on, Lydia, you can do it.",
+            "keyword": "Come",
+            "sentiment": "objective"
+        }
+    ],
+    "relationships": [
+        {
+            "from": "1",
+            "to": "4",
+            "relation": "objective"
+        },
+        {
+            "from": "2",
+            "to": "4",
+            "relation": "objective"
+        },
+        {
+            "from": "3",
+            "to": "4",
+            "relation": "objective"
+        }
+    ]
+}

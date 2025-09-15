@@ -1,0 +1,44 @@
+{
+    "audio": [
+        {
+            "id": "1",
+            "feature": "pitch",
+            "value": "low"
+        },
+        {
+            "id": "2",
+            "feature": "rate",
+            "value": "fast"
+        },
+        {
+            "id": "3",
+            "feature": "volume",
+            "value": "soft"
+        }
+    ],
+    "text": [
+        {
+            "id": "4",
+            "content": "Push 'em out, push 'em out, harder, harder.",
+            "keyword": "Push",
+            "sentiment": "positive"
+        }
+    ],
+    "relationships": [
+        {
+            "from": "1",
+            "to": "4",
+            "relation": "weakens"
+        },
+        {
+            "from": "2",
+            "to": "4",
+            "relation": "intensifies"
+        },
+        {
+            "from": "3",
+            "to": "4",
+            "relation": "weakens"
+        }
+    ]
+}
