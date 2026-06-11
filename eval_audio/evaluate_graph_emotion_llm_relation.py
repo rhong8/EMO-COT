@@ -3,10 +3,18 @@ import json
 import pandas as pd
 import librosa
 import spacy
+import openSMILE
 from transformers import pipeline
 
 # 加载 spaCy 模型用于关键词提取
 nlp = spacy.load('en_core_web_sm')
+
+smile = opensmile.Smile(
+    feature_set=opensmile.FeatureSet.eGeMAPSv02,
+    feature_level=opensmile.FeatureLevel.Functionals,
+)
+
+
 
 # 加载 LLM 模型
 llm = pipeline("text-generation", model="facebook/bart-large-mnli")
@@ -14,6 +22,7 @@ llm = pipeline("text-generation", model="facebook/bart-large-mnli")
 # 提取并分类音频特征的函数
 def extract_audio_features(audio_path, utterance):
     try:
+        features = smile.process_file(audio_path)
         audio, sr = librosa.load(audio_path)
         
         # 提取音高（Pitch）
@@ -107,7 +116,7 @@ def build_emotion_graph(csv_path, audio_dir, emotion_graph_dir="emotion_graph_ll
         utterance_id = row['Utterance_ID']
         
         # 构建音频文件名
-        audio_file = f"dia{dialogue_id}_utt{utterance_id}.wav"
+        audio_file = f"dia{dialogue_id}_utt{utterance_id}.mp4"
         audio_path = os.path.join(audio_dir, audio_file)
         
         # 检查音频文件是否存在
