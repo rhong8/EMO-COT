@@ -5,6 +5,7 @@ import librosa
 import spacy
 from transformers import pipeline
 from sklearn.metrics import accuracy_score
+import opensmile
 
 # 加载 spaCy 模型用于关键词提取
 nlp = spacy.load('en_core_web_sm')
@@ -12,6 +13,10 @@ nlp = spacy.load('en_core_web_sm')
 # 加载情感分析模型
 sentiment_analyzer = pipeline("sentiment-analysis")
 
+smile = opensmile.Smile(
+    features = opensmile.FeatureSet.eGeMAPSv02,
+    feature_level = opensmile.FeatureLevel.Functionals,
+)
 # 提取并分类音频特征的函数
 def extract_audio_features(audio_path, utterance):
     try:
