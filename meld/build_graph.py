@@ -17,12 +17,26 @@ smile = opensmile.Smile(
     features = opensmile.FeatureSet.eGeMAPSv02,
     feature_level = opensmile.FeatureLevel.Functionals,
 )
+
+
+
+
 # 提取并分类音频特征的函数
 def extract_audio_features(audio_path, utterance):
     try:
+        
+        features = smile.process_file(audio_path)
+
+        #get volume, jitter, shimmer, and intensity from smile
+        pitch = features['F0semitoneFrom27.5Hz_sma3nz_amean'].values[0]
+        volume = features['loudness_sma3_amean'].values[0]
+        jitter = features['jitterLocal_sma3nz_amean'].values[0]
+        shimmer = features['shimmerLocaldB_sma3nz_amean']
+
+        
         audio, sr = librosa.load(audio_path)
-        pitch, _ = librosa.piptrack(y=audio, sr=sr)
-        pitch_mean = pitch.mean()
+        #pitch, _ = librosa.piptrack(y=audio, sr=sr)
+        #pitch_mean = pitch.mean()
         pitch_label = "high" if pitch_mean > 100 else "low"
 
         duration = librosa.get_duration(y=audio, sr=sr)
@@ -30,7 +44,7 @@ def extract_audio_features(audio_path, utterance):
         rate = word_count / duration if duration > 0 else 0
         rate_label = "fast" if rate > 2 else "slow"
 
-        volume = librosa.feature.rms(y=audio).mean()
+        #volume = librosa.feature.rms(y=audio).mean()
         volume_label = "loud" if volume > 0.1 else "soft"
 
         return [
