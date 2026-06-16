@@ -6,11 +6,12 @@ import spacy
 from transformers import pipeline
 from sklearn.metrics import accuracy_score
 import opensmile
+pip install keybert
 
-# 加载 spaCy 模型用于关键词提取
+# Load spaCy model for keyword extraction
 nlp = spacy.load('en_core_web_sm')
 
-# 加载情感分析模型
+# Load sentiment analysis model
 sentiment_analyzer = pipeline("sentiment-analysis")
 
 smile = opensmile.Smile(
@@ -18,51 +19,55 @@ smile = opensmile.Smile(
     feature_level = opensmile.FeatureLevel.Functionals,
 )
 
+features_df = pd.read_csv('/content/drive/MyDrive/MELD.Raw/acoustic_features.csv')
+row_features = features_df[features_df['filename'] == file].iloc[0]
 
-
-
-# 提取并分类音频特征的函数
+# Function to extract and classify audio features
 def extract_audio_features(audio_path, utterance):
     try:
-        
-        features = smile.process_file(audio_path)
-
+        #this stores the row. Access the attributes through column
+        row_features = features_df[features_df['filename'] == audio_path].iloc[0]
+        #features = smile.process_file(audio_path)
         #get volume, jitter, shimmer, and intensity from smile
 
+
+        #grab mean data from pre-loaded csv instead of extracting again
+        pitch = row_features['pitch']
+        volume = row_features['volume']
+        jitter = row_features['jitter']
+        shimmer = row_features['shimmer']
+        intensity = row_features['intensity']
+        syllables_rate = row_features['syllables_rate']
+        speech_rate = row_features['speech_rate']
+        duration = row_features['duration']
         
-        audio, sr = librosa.load(audio_path)
-        #pitch, _ = librosa.piptrack(y=audio, sr=sr)
-        #pitch_mean = pitch.mean()
-        pitch_label = "high" if pitch_mean > 100 else "low"
+        pitch_label = "high" if pitch > 39.7 else "normal" pitch_mean >= 32.0 else "low"
 
-        duration = librosa.get_duration(y=audio, sr=sr)
-        word_count = len(utterance.split())
-        rate = word_count / duration if duration > 0 else 0
-        rate_label = "fast" if rate > 2 else "slow"
+        #speech rate label
+        speech_rate_label = "fast" if speech_rate > 4.965 else "normal" if speech_rate >= 1.2 else "slow"
+        
 
-        #volume = librosa.feature.rms(y=audio).mean()
-        volume_label = "loud" if volume > 0.1 else "soft"
-
+        volume_label = "loud" if volume > 0.607 else "normal" if rate >= 0.429 else "soft"
         return [
             {"id": "1", "feature": "pitch", "value": pitch_label},
-            {"id": "2", "feature": "rate", "value": rate_label},
+            {"id": "2", "feature": "speech_rate", "value": speech_rate_label},
             {"id": "3", "feature": "volume", "value": volume_label}
         ]
     except Exception as e:
-        print(f"处理音频文件 {audio_path} 时出错: {e}")
+        print(f"Error processing audio file {audio_path}: {e}")
         return [
             {"id": "1", "feature": "pitch", "value": "unknown"},
-            {"id": "2", "feature": "rate", "value": "unknown"},
+            {"id": "2", "feature": "speech_rate", "value": "unknown"},
             {"id": "3", "feature": "volume", "value": "unknown"}
         ]
 
-# 从话语中提取关键词的函数
+# Function to extract keywords from utterance
 def extract_keyword(utterance):
     doc = nlp(utterance)
     keywords = [token.text for token in doc if token.pos_ in ['NOUN', 'VERB', 'ADJ']]
     return keywords[0] if keywords else "unknown"
 
-# 使用 Transformers 模型预测情感极性的函数
+# Function to predict sentiment polarity using Transformers model
 def get_sentiment(utterance):
     result = sentiment_analyzer(utterance)[0]
     label = result['label'].lower()
@@ -71,11 +76,11 @@ def get_sentiment(utterance):
     elif label == 'negative':
         return "negative"
     else:
-        return "objective" 
+        return "objective"
 
 def get_relation(feature_label, sentiment):
     if sentiment == "objective":
-        return "objective"  
+        return "objective"
     feature_sentiment = "positive" if feature_label in ["high", "fast", "loud"] else "negative"
     return "supports" if feature_sentiment == sentiment else "conflicts"
 
@@ -91,7 +96,7 @@ def build_emotion_graph(csv_path, audio_dir, emotion_graph_dir="meld/emotion_gra
         utterance = row['Utterance']
         ground_truth_sentiment = row['Sentiment'].lower() if pd.notna(row['Sentiment']) else "objective"
         if ground_truth_sentiment == "neutral":
-            ground_truth_sentiment = "objective"  # 修改
+            ground_truth_sentiment = "objective"  # modified
 
         dialogue_id = row['Dialogue_ID']
         utterance_id = row['Utterance_ID']
@@ -104,7 +109,7 @@ def build_emotion_graph(csv_path, audio_dir, emotion_graph_dir="meld/emotion_gra
         audio_path = os.path.join(audio_dir, audio_file)
 
         if not os.path.exists(audio_path):
-            print(f"未找到音频文件: {audio_path}")
+            print(f"Audio file not found: {audio_path}")
             continue
 
         audio_features = extract_audio_features(audio_path, utterance)
@@ -136,13 +141,13 @@ def build_emotion_graph(csv_path, audio_dir, emotion_graph_dir="meld/emotion_gra
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(emotion_graph, f, indent=4, ensure_ascii=False)
 
-        print(f"已保存 Emotion Graph 到: {output_path}")
+        print(f"Saved Emotion Graph to: {output_path}")
 
     if ground_truths and predictions:
         accuracy = accuracy_score(ground_truths, predictions)
-        print(f"Transformers 模型预测的 sentiment 准确率: {accuracy:.2f}")
+        print(f"Transformer model sentiment prediction accuracy: {accuracy:.2f}")
     else:
-        print("无法计算准确率：没有可用的 ground truth 或预测数据")
+        print("Cannot calculate accuracy: no ground truth or prediction data available")
 
 if __name__ == "__main__":
     csv_path = "YOUR_GRAPH_PATH"
