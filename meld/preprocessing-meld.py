@@ -1,11 +1,14 @@
 
-#Extract the mean for each value. Then calculate the standard deviation and z-scores for subsequent values using a cached .csv within the Google Drive
+#Get the utterance based on the file name.
+#Calculate the mean and std dev of each major feature, appending it to a corpus.
 import opensmile
 import os
 import librosa
 import numpy as np
 import pandas as pd
 import textstat
+import re
+
 
 smile = opensmile.Smile(
     feature_set=opensmile.FeatureSet.eGeMAPSv02,
@@ -18,8 +21,27 @@ cache_path = '/content/drive/MyDrive/MELD.Raw/acoustic_features.csv' #YOUR SAVED
 
 pd.read_csv('/content/drive/MyDrive/MELD/data/MELD/test_sent_emo.csv')
 
+
+def get_utterance(wav_path):
+    if "dia" not in wav_path or "utt" not in wav_path:
+        return None
+    
+    #Extract the numbers from the wav file
+    numbers = re.findall(r'\d+',wav_path)
+    
+    dia_id = numbers[0]
+    utt_id = numbers[1]
+    
+    
+    row = df[(df['Dialogue_ID'] == numbers[0]) & (df['Utterance_ID'] == numbers[1])].iloc[0]
+    utterance = row.iloc[0]['Utterance']
+
+
+
+
+
 #Calculates the means for the MELD dataset.
-def calculate_mean(wav_path, cache_path):
+def calculate_corpus_stats(wav_path, cache_path):
     pitch_total = 0
     loudness_total = 0
     jitter_total = 0
@@ -72,6 +94,13 @@ def calculate_mean(wav_path, cache_path):
             print(f"Processing file {file_count + 1}")
         file_count += 1
 
+
+    # calculate the meansquared difference, then divide by 2610
+
+
+
+
+    
     # convert to dataframe and save to Drive once
     results_df = pd.DataFrame(results)
     results_df.to_csv(cache_path, index=False)
@@ -86,4 +115,7 @@ def calculate_mean(wav_path, cache_path):
     speech_rate_mean = speech_rate_total / file_count
 
     print(pitch_mean, loudness_mean, jitter_mean, shimmer_mean, intensity_mean)
+
+
+
     
