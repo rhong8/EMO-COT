@@ -152,7 +152,7 @@ def build_emotion_graph(emotion_graph_dir):
             "text": text_data,
             "relationships": relationships
         }
-        output_filename = f"emotion_graph_{filename}.json"
+        output_filename = f"emotion_graph_{filename.replace('.wav', '')}.json"
         
         output_path = os.path.join(emotion_graph_dir, output_filename)
         with open(output_path, 'w', encoding='utf-8') as f:
