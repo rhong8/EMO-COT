@@ -1,6 +1,4 @@
 
-#Get the utterance based on the file name.
-#Calculate the mean and std dev of each major feature, appending it to a corpus.
 import opensmile
 import os
 import librosa
@@ -8,40 +6,107 @@ import numpy as np
 import pandas as pd
 import textstat
 import re
-
+import subprocess
+import json
 
 smile = opensmile.Smile(
     feature_set=opensmile.FeatureSet.eGeMAPSv02,
     feature_level=opensmile.FeatureLevel.Functionals,
 )
 
+#YOUR GROUND TRUTH DATA HERE
+ground_truth = '/content/drive/MyDrive/MELD/data/MELD/test_sent_emo.csv'
+df = pd.read_csv(ground_truth)
 
-wav_path = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test_wav/' #YOUR WAV PATH HERE
-cache_path = '/content/drive/MyDrive/MELD.Raw/acoustic_features.csv' #YOUR SAVED PATH HERE
+def convert_to_wav(audio_dir, wav_dir):
+    os.makedirs(wav_dir, exist_ok=True)
 
-pd.read_csv('/content/drive/MyDrive/MELD/data/MELD/test_sent_emo.csv')
+    for filename in os.listdir(audio_dir):
+        if filename.startswith('._'):
+            continue
+
+        if filename.endswith('.mp4'):
+            mp4_path = os.path.join(audio_dir, filename)
+            wav_path = os.path.join(wav_dir, filename.replace('.mp4', '.wav'))
+
+            if not os.path.exists(wav_path):
+                subprocess.run(
+                    ['ffmpeg', '-i', mp4_path, '-ar', '16000', '-ac', '1', wav_path, '-y', '-loglevel', 'error'],
+                    check=True
+                )
+
+    print("Done converting files.")
+
+
+#Returns a set of valid files to later access. Excludes files with the wrong naming convention or not .wav files
+def clean_files(wav_dir):
+    valid_files = set()
+    
+    for file in os.listdir(wav_dir):     
+        if not file.endswith('wav') or not re.match(r'^dia\d+_utt\d+\.wav$', file):
+            continue
+        
+        numbers = re.findall(r'\d+', file)
+        dia_id = int(numbers[0])
+        utt_id = int(numbers[1])
+        
+        match = df[(df['Dialogue_ID'] == dia_id) & (df['Utterance_ID'] == utt_id)]
+        if match.empty:
+            continue
+        
+        valid_files.add(file)
+    
+    return valid_files
+
+
+#Checks files with the valid format, but are not in the validation table
+def extraneous_files(wav_dir):
+    final_files = []
+    extraneous_files = []
+    csv_files_dict = dict()
+
+    for idx, row in df.iterrows():
+        file_name = f"dia{row['Dialogue_ID']}_utt{row['Utterance_ID']}.wav"
+        csv_files_dict[file_name] = row
+
+    count_missing = 0
+
+    for f in os.listdir(wav_dir):
+        if f.startswith('final'):
+            final_files.append(f)
+        elif f.startswith('dia'):
+            if f not in csv_files_dict:
+                count_missing += 1
+                extraneous_files.append(f)
+        else:
+            extraneous_files.append(f)
+
+    print(len(final_files))
+    print(final_files)
+    print(extraneous_files)
+    print("Files that were found in the wav directory but not in the .csv: ", count_missing)
+    #print(csv_files_dict)
 
 
 def get_utterance(wav_path):
     if "dia" not in wav_path or "utt" not in wav_path:
         return None
     
-    #Extract the numbers from the wav file
-    numbers = re.findall(r'\d+',wav_path)
+    numbers = re.findall(r'\d+', wav_path)
     
-    dia_id = numbers[0]
-    utt_id = numbers[1]
+    dia_id = int(numbers[0])
+    utt_id = int(numbers[1])
     
+    row = df[(df['Dialogue_ID'] == dia_id) & (df['Utterance_ID'] == utt_id)].iloc[0]
+
+    return row['Utterance']
+
+#Calculates the 7 acoustic features for each audio file and saves it to cache_path.
+#Calculates the mean and std dev of the entire corpus and saves it to .json path
+def calculate_corpus_stats(wav_dir, cache_path, json_path):
     
-    row = df[(df['Dialogue_ID'] == numbers[0]) & (df['Utterance_ID'] == numbers[1])].iloc[0]
-    utterance = row.iloc[0]['Utterance']
-
-
-
-
-
-#Calculates the means for the MELD dataset.
-def calculate_corpus_stats(wav_path, cache_path):
+    valid_files = clean_files(wav_dir)
+    
     pitch_total = 0
     loudness_total = 0
     jitter_total = 0
@@ -52,11 +117,12 @@ def calculate_corpus_stats(wav_path, cache_path):
     file_count = 0
     results = []
 
-    for file in os.listdir(wav_path):
+    for file in valid_files:
         if not file.endswith('.wav'):
             continue
-        utterance = df.iloc[csv_files_dict[file]]['Utterance'] #take the row num., locate it in the pds dataframe, extract the utterance
-        file_path = os.path.join(wav_path, file)
+        
+        file_path = os.path.join(wav_dir, file)
+        utterance = get_utterance(file_path)
 
         audio, sr = librosa.load(file_path, sr=None)
         features = smile.process_file(file_path)
@@ -78,35 +144,29 @@ def calculate_corpus_stats(wav_path, cache_path):
         syllables_rate_total += syllables_rate
         speech_rate_total += speech_rate
 
+
         results.append({
-            'filename': file,
-            'pitch': pitch,
-            'loudness': loudness,
-            'jitter': jitter,
-            'shimmer': shimmer,
-            'intensity': intensity,
-            'syllables_rate': syllables_rate,
-            'speech_rate': speech_rate,
-            'duration': duration
+        'filename': file,
+        'pitch': pitch,
+        'loudness': loudness,
+        'jitter': jitter,
+        'shimmer': shimmer,
+        'intensity': intensity,
+        'syllables_rate': syllables_rate,
+        'speech_rate': speech_rate,
+        'duration': duration
         })
+
 
         if file_count % 100 == 99:
             print(f"Processing file {file_count + 1}")
         file_count += 1
 
-
-    # calculate the meansquared difference, then divide by 2610
-
-
-
-
-    
-    # convert to dataframe and save to Drive once
     results_df = pd.DataFrame(results)
     results_df.to_csv(cache_path, index=False)
     print(f"Saved {file_count} files to {cache_path}")
 
-    pitch_mean = pitch_total / file_count
+    pitch_mean = pitch_total / file_count  
     loudness_mean = loudness_total / file_count
     jitter_mean = jitter_total / file_count
     shimmer_mean = shimmer_total / file_count
@@ -114,8 +174,57 @@ def calculate_corpus_stats(wav_path, cache_path):
     syllables_rate_mean = syllables_rate_total / file_count
     speech_rate_mean = speech_rate_total / file_count
 
-    print(pitch_mean, loudness_mean, jitter_mean, shimmer_mean, intensity_mean)
+    pitch_sqdiff = 0
+    loudness_sqdiff = 0
+    jitter_sqdiff = 0
+    shimmer_sqdiff = 0
+    intensity_sqdiff = 0
+    syllables_sqdiff = 0
+    speech_rate_sqdiff = 0
+
+    print("Now calculating the std. dev..")
+    file_count = 0
+    #directly access the stats from the results array, not re-loading the audio files
+    for r in results:
+        pitch_sqdiff += (r['pitch'] - pitch_mean) ** 2
+        loudness_sqdiff += (r['loudness'] - loudness_mean) ** 2
+        jitter_sqdiff += (r['jitter'] - jitter_mean) ** 2
+        shimmer_sqdiff += (r['shimmer'] - shimmer_mean) ** 2
+        intensity_sqdiff += (r['intensity'] - intensity_mean) ** 2
+        syllables_sqdiff += (r['syllables_rate'] - syllables_rate_mean) ** 2
+        speech_rate_sqdiff += (r['speech_rate'] - speech_rate_mean) ** 2
+        
+        if file_count % 100 == 99:
+            print(f"Processing file {file_count + 1}")
+        file_count += 1
+
+    pitch_std = (pitch_sqdiff / 2610) ** 0.5
+    loudness_std = (loudness_sqdiff / 2610) ** 0.5
+    jitter_std = (jitter_sqdiff / 2610) ** 0.5
+    shimmer_std = (shimmer_sqdiff / 2610) ** 0.5
+    intensity_std = (intensity_sqdiff / 2610) ** 0.5
+    syllables_std = (syllables_sqdiff / 2610) ** 0.5
+    speech_rate_std = (speech_rate_sqdiff / 2610) ** 0.5
+
+    stats = {
+        'pitch': {'mean': pitch_mean, 'std': pitch_std},
+        'loudness': {'mean': loudness_mean, 'std': loudness_std},
+        'jitter': {'mean': jitter_mean, 'std': jitter_std},
+        'shimmer': {'mean': shimmer_mean, 'std': shimmer_std},
+        'intensity': {'mean': intensity_mean, 'std': intensity_std},
+        'syllables': {'mean': syllables_rate_mean, 'std': syllables_std},
+        'speech_rate': {'mean': speech_rate_mean, 'std': speech_rate_std},
+    }
+
+    with open(json_path, 'w') as f:
+        json.dump(stats, f, indent=4)
 
 
+if __name__ == '__main__':
+    audio_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test' #YOUR RAW DATA PATH HERE
+    wav_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test_wav/' #YOUR DATA, IN WAV FILE PATH HERE
+    json_path = '/content/drive/MyDrive/MELD.Raw/corpus_stats_v2.json' #YOUR .JSON SAVE PATH HERE
+    cache_path = '/content/drive/MyDrive/MELD.Raw/acoustic_features_v2.csv' #YOUR FEATURE SAVE PATH HERE
 
     
+    calculate_corpus_stats(wav_dir, cache_path, json_path)
