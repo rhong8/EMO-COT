@@ -31,7 +31,7 @@ def extract_audio_features(filename):
 
         #grab mean data from pre-loaded csv instead of extracting again
         pitch = row_features['pitch']
-        volume = row_features['volume']
+        loudness = row_features['loudness']
         jitter = row_features['jitter']
         shimmer = row_features['shimmer']
         intensity = row_features['intensity']
@@ -152,7 +152,7 @@ def build_emotion_graph(emotion_graph_dir):
             "text": text_data,
             "relationships": relationships
         }
-        output_filename = f"emotion_graph_dia{filename}.json"
+        output_filename = f"emotion_graph_{filename}.json"
         
         output_path = os.path.join(emotion_graph_dir, output_filename)
         with open(output_path, 'w', encoding='utf-8') as f:
