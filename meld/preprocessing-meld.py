@@ -15,7 +15,7 @@ smile = opensmile.Smile(
 )
 
 #YOUR GROUND TRUTH DATA HERE
-ground_truth = '/content/drive/MyDrive/MELD/data/MELD/test_sent_emo.csv'
+ground_truth = 'MELD/data/MELD/test_sent_emo.csv'
 df = pd.read_csv(ground_truth)
 
 def convert_to_wav(audio_dir, wav_dir):
