@@ -9,7 +9,8 @@ from transformers import pipeline
 
 '''
 This file takes from an existing features .csv file, and creates the emotion graph based on that.
-It does not extract data in the loop.
+It does not extract data in the loop. It also uses facebook bart large mnli zero-shot classification to
+infer cross-modal relations, because its free and efficient.
 '''
 
 #Global var for all features, specifically for the MELD dataset.
@@ -111,7 +112,7 @@ def get_relation_with_llm(audio_feature, feature_label, sentiment):
 
 #Builds the full emotion graph based on files from all_features.csv and saves it to emotion_graph_dir
 def build_emotion_graph(emotion_graph_dir):
-    
+    print("Building the emotion graph...")
 
 
     for idx, row in features_df.iterrows():
@@ -164,4 +165,5 @@ if __name__ == "__main__":
     csv_path = "YOUR_GRAPH_PATH"
     audio_dir = "YOUR_AUDIO_PATH"
     emotion_graph_dir = '/content/drive/MyDrive/MELD.Raw/emotion-graph'
+    
     build_emotion_graph(emotion_graph_dir)
