@@ -207,13 +207,13 @@ def calculate_corpus_stats(wav_dir, cache_path, json_path):
     speech_rate_std = (speech_rate_sqdiff / 2610) ** 0.5
 
     stats = {
-        'pitch': {'mean': pitch_mean, 'std': pitch_std},
-        'loudness': {'mean': loudness_mean, 'std': loudness_std},
-        'jitter': {'mean': jitter_mean, 'std': jitter_std},
-        'shimmer': {'mean': shimmer_mean, 'std': shimmer_std},
-        'intensity': {'mean': intensity_mean, 'std': intensity_std},
-        'syllables': {'mean': syllables_rate_mean, 'std': syllables_std},
-        'speech_rate': {'mean': speech_rate_mean, 'std': speech_rate_std},
+        'pitch': {'mean': float(pitch_mean), 'std': float(pitch_std)},
+        'loudness': {'mean': float(loudness_mean), 'std': float(loudness_std)},
+        'jitter': {'mean': float(jitter_mean), 'std': float(jitter_std)},
+        'shimmer': {'mean': float(shimmer_mean), 'std': float(shimmer_std)},
+        'intensity': {'mean': float(intensity_mean), 'std': float(intensity_std)},
+        'syllables': {'mean': float(syllables_rate_mean), 'std': float(syllables_std)},
+        'speech_rate': {'mean': float(speech_rate_mean), 'std': float(speech_rate_std)},
     }
 
     with open(json_path, 'w') as f:
