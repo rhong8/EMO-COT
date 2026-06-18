@@ -1,32 +1,29 @@
 import os
 import json
 import pandas as pd
-import librosa
-import spacy
+
 from transformers import pipeline
-from sklearn.metrics import accuracy_score
-import opensmile
-pip install keybert
 
-# Load spaCy model for keyword extraction
-nlp = spacy.load('en_core_web_sm')
 
-# Load sentiment analysis model
-sentiment_analyzer = pipeline("sentiment-analysis")
 
-smile = opensmile.Smile(
-    features = opensmile.FeatureSet.eGeMAPSv02,
-    feature_level = opensmile.FeatureLevel.Functionals,
-)
 
-features_df = pd.read_csv('/content/drive/MyDrive/MELD.Raw/acoustic_features.csv')
-row_features = features_df[features_df['filename'] == file].iloc[0]
+'''
+This file takes from an existing features .csv file, and creates the emotion graph based on that.
+It does not extract data in the loop.
+'''
 
-# Function to extract and classify audio features
-def extract_audio_features(audio_path, utterance):
+#Global var for all features, specifically for the MELD dataset.
+features_df = pd.read_csv('/content/drive/MyDrive/MELD.Raw/all_features.csv')
+classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+
+# Function to extract and classify audio features to labels on filename alone, assuming that the folders
+#Are in the right place.  Returns a list of dictionary of the features, labelled from ID 1 to 7 for downstream
+# Emotion Graph evaluation.
+def extract_audio_features(filename):
     try:
         #this stores the row. Access the attributes through column
-        row_features = features_df[features_df['filename'] == audio_path].iloc[0]
+        row_features = features_df[features_df['filename'] == filename].iloc[0]
         #features = smile.process_file(audio_path)
         #get volume, jitter, shimmer, and intensity from smile
 
@@ -41,93 +38,112 @@ def extract_audio_features(audio_path, utterance):
         speech_rate = row_features['speech_rate']
         duration = row_features['duration']
         
-        pitch_label = "high" if pitch > 39.7 else "normal" pitch_mean >= 32.0 else "low"
-
-        #speech rate label
+        #assign labels "fast", "normal", "slow", or appropiately , "high", "normal", "low" for features.
+        pitch_label = "high" if pitch > 39.7 else "normal" if pitch >= 32.0 else "low"
         speech_rate_label = "fast" if speech_rate > 4.965 else "normal" if speech_rate >= 1.2 else "slow"
-        
+        jitter_label = "high" if jitter > 0.030 else "normal" if jitter >= 0.018 else "low"
+        shimmer_label = "high" if shimmer > 1.306 else "normal" if shimmer >= 1.025 else "low"
+        intensity_label = "high" if intensity > 0.0017 else "normal" if intensity >= 0.0007 else "low"
+        syllables_label = "high" if syllables_rate > 6.287 else "normal" if syllables_rate >= 1.294 else "low"
+        volume_label = "loud" if volume > 0.607 else "normal" if volume >= 0.429 else "soft"
 
-        volume_label = "loud" if volume > 0.607 else "normal" if rate >= 0.429 else "soft"
+
         return [
             {"id": "1", "feature": "pitch", "value": pitch_label},
             {"id": "2", "feature": "speech_rate", "value": speech_rate_label},
-            {"id": "3", "feature": "volume", "value": volume_label}
+            {"id": "3", "feature": "jitter", "value": jitter_label},
+            {"id": "4", "feature": "shimmer", "value": shimmer_label},
+            {"id": "5", "feature": "intensity", "value": intensity_label},
+            {"id": "6", "feature": "syllables", "value": syllables_label},
+            {"id": "7", "feature": "volume", "value": volume_label},
         ]
+    
+
     except Exception as e:
-        print(f"Error processing audio file {audio_path}: {e}")
+        print(f"Error processing audio file {filename}: {e}")
         return [
             {"id": "1", "feature": "pitch", "value": "unknown"},
             {"id": "2", "feature": "speech_rate", "value": "unknown"},
-            {"id": "3", "feature": "volume", "value": "unknown"}
+            {"id": "3", "feature": "jitter", "value": "unknown"},
+            {"id": "4", "feature": "shimmer", "value": "unknown"},
+            {"id": "5", "feature": "intensity", "value": "unknown"},
+            {"id": "6", "feature": "syllables", "value": "unknown"},
+            {"id": "7", "feature": "volume", "value": "unknown"},
         ]
 
-# Function to extract keywords from utterance
-def extract_keyword(utterance):
-    doc = nlp(utterance)
-    keywords = [token.text for token in doc if token.pos_ in ['NOUN', 'VERB', 'ADJ']]
-    return keywords[0] if keywords else "unknown"
+# Extract it from our all_features.csv file directly without having to recompute.
+def extract_keyword(filename):
+    row_features = features_df[features_df['filename'] == filename].iloc[0]
 
-# Function to predict sentiment polarity using Transformers model
-def get_sentiment(utterance):
-    result = sentiment_analyzer(utterance)[0]
-    label = result['label'].lower()
-    if label == 'positive':
-        return "positive"
-    elif label == 'negative':
-        return "negative"
-    else:
-        return "objective"
+    keyword = row_features['keyword']
 
-def get_relation(feature_label, sentiment):
-    if sentiment == "objective":
-        return "objective"
-    feature_sentiment = "positive" if feature_label in ["high", "fast", "loud"] else "negative"
-    return "supports" if feature_sentiment == sentiment else "conflicts"
+    #pandas doesn't have None, it has NaN
+    return keyword if pd.notna(keyword) else "unknown"
 
-def build_emotion_graph(csv_path, audio_dir, emotion_graph_dir="meld/emotion_graph"):
-    if not os.path.exists(emotion_graph_dir):
-        os.makedirs(emotion_graph_dir)
+# Extract it directly from the .csv file.
+def get_sentiment(filename):
+    row_features = features_df[features_df['filename'] == filename].iloc[0]
 
-    df = pd.read_csv(csv_path)
-    predictions = []
-    ground_truths = []
+    return row_features['sentiment']
 
-    for idx, row in df.iterrows():
+
+# Function to generate relationships using LLM
+#audio_feature: pitch, volume, intensity, etc.
+#feature_label: low, normal, high / slow, normal, fast
+def get_relation_with_llm(audio_feature, feature_label, sentiment):
+
+    
+    candidate_labels = ['supports', 'is neutral to', 'contradicts']
+
+    text = f"The {audio_feature} is {feature_label}. The sentiment is {sentiment}."
+
+
+    #takes the text, possible labels, and the hypothesis to classify one of the three.
+    result = classifier(
+        text,
+        candidate_labels,
+        hypothesis_template = "This acoustic feature {} the sentiment. "
+    )
+
+    
+    return result['labels'][0]
+
+
+#Builds the full emotion graph based on files from all_features.csv and saves it to emotion_graph_dir
+def build_emotion_graph(emotion_graph_dir):
+    
+
+
+    for idx, row in features_df.iterrows():
+        filename = row['filename']
         utterance = row['Utterance']
-        ground_truth_sentiment = row['Sentiment'].lower() if pd.notna(row['Sentiment']) else "objective"
-        if ground_truth_sentiment == "neutral":
-            ground_truth_sentiment = "objective"  # modified
+        
+        predicted_sentiment = get_sentiment(filename)
+        
 
-        dialogue_id = row['Dialogue_ID']
-        utterance_id = row['Utterance_ID']
+        audio_features = extract_audio_features(filename)
+        keyword = extract_keyword(filename)
 
-        predicted_sentiment = get_sentiment(utterance)
-        predictions.append(predicted_sentiment)
-        ground_truths.append(ground_truth_sentiment)
 
-        audio_file = f"dia{dialogue_id}_utt{utterance_id}.wav"
-        audio_path = os.path.join(audio_dir, audio_file)
-
-        if not os.path.exists(audio_path):
-            print(f"Audio file not found: {audio_path}")
-            continue
-
-        audio_features = extract_audio_features(audio_path, utterance)
-        keyword = extract_keyword(utterance)
-
+        #the text node of the paper
         text_data = [
             {
-                "id": "4",
-                "content": utterance,
+                "id": "8",
+                "utterance": utterance,
                 "keyword": keyword,
-                "sentiment": ground_truth_sentiment
+                "sentiment": predicted_sentiment,
             }
         ]
 
+        #create cross-modal graph of feature to sentiment
         relationships = [
-            {"from": "1", "to": "4", "relation": get_relation(audio_features[0]['value'], ground_truth_sentiment)},
-            {"from": "2", "to": "4", "relation": get_relation(audio_features[1]['value'], ground_truth_sentiment)},
-            {"from": "3", "to": "4", "relation": get_relation(audio_features[2]['value'], ground_truth_sentiment)}
+            {"from": "1", "to": "8", "relation": get_relation_with_llm(audio_features[0]['feature'], audio_features[0]['value'], predicted_sentiment)},
+            {"from": "2", "to": "8", "relation": get_relation_with_llm(audio_features[1]['feature'], audio_features[1]['value'], predicted_sentiment)},
+            {"from": "3", "to": "8", "relation": get_relation_with_llm(audio_features[2]['feature'], audio_features[2]['value'], predicted_sentiment)},
+            {"from": "4", "to": "8", "relation": get_relation_with_llm(audio_features[3]['feature'], audio_features[3]['value'], predicted_sentiment)},
+            {"from": "5", "to": "8", "relation": get_relation_with_llm(audio_features[4]['feature'], audio_features[4]['value'], predicted_sentiment)},
+            {"from": "6", "to": "8", "relation": get_relation_with_llm(audio_features[5]['feature'], audio_features[5]['value'], predicted_sentiment)},
+            {"from": "7", "to": "8", "relation": get_relation_with_llm(audio_features[6]['feature'], audio_features[6]['value'], predicted_sentiment)},
         ]
 
         emotion_graph = {
@@ -135,21 +151,17 @@ def build_emotion_graph(csv_path, audio_dir, emotion_graph_dir="meld/emotion_gra
             "text": text_data,
             "relationships": relationships
         }
-
-        filename = f"emotion_graph_dia{dialogue_id}_utt{utterance_id}.json"
-        output_path = os.path.join(emotion_graph_dir, filename)
+        output_filename = f"emotion_graph_dia{filename}.json"
+        
+        output_path = os.path.join(emotion_graph_dir, output_filename)
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(emotion_graph, f, indent=4, ensure_ascii=False)
 
         print(f"Saved Emotion Graph to: {output_path}")
 
-    if ground_truths and predictions:
-        accuracy = accuracy_score(ground_truths, predictions)
-        print(f"Transformer model sentiment prediction accuracy: {accuracy:.2f}")
-    else:
-        print("Cannot calculate accuracy: no ground truth or prediction data available")
 
 if __name__ == "__main__":
     csv_path = "YOUR_GRAPH_PATH"
     audio_dir = "YOUR_AUDIO_PATH"
-    build_emotion_graph(csv_path, audio_dir)
+    emotion_graph_dir = '/content/drive/MyDrive/MELD.Raw/emotion-graph'
+    build_emotion_graph(emotion_graph_dir)

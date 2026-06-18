@@ -18,7 +18,7 @@ import soundfile as sf
 #from qwen_omni_utils import process_mm_info
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# 数据集配置
+# Dataset configuration
 ds_collections = {
     'meld': {'path': 'ser/meld_eval.jsonl'},
     'iemocap': {'path': 'ser/iemocap_eval.jsonl'},
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
-    # 加载模型和处理器
+    # Load model and processor
     if args.checkpoint == 'Qwen/Qwen2-Audio-7B':
         model = Qwen2AudioForConditionalGeneration.from_pretrained(
             args.checkpoint, device_map='cuda', trust_remote_code=True, torch_dtype='auto').eval()
@@ -99,7 +99,7 @@ if __name__ == '__main__':
         collate_fn=partial(collate_fn, processor=processor),
     )
 
-    # 推理循环
+    # Inference loop
     gts = []
     sources = []
     rets = []
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         sources.extend(source)
         audio_paths.extend(audio_path)
 
-    # 评估结果
+    # Evaluate results
     print(f"Evaluating {args.dataset} ...")
     results = []
     for gt, response, source, audio_path in zip(gts, rets, sources, audio_paths):
@@ -132,16 +132,6 @@ if __name__ == '__main__':
         source = item["source"]
         results_dict.setdefault(source, []).append(item)
 
-    # for source in results_dict:
-    #     refs, hyps = [], []
-    #     results_list = results_dict[source]
-    #     for result in results_list:
-    #         gt = result["gt"]
-    #         response = result["response"].lstrip()
-    #         refs.append(gt)
-    #         hyps.append(response)
-    #     score = accuracy_score(refs, hyps)
-    #     print(f"{source} ACC_score:", score, len(hyps))
     for source in results_dict:
         refs, hyps = [], []
         results_list = results_dict[source]
