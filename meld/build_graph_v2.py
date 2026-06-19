@@ -1,22 +1,48 @@
 import os
 import json
 import pandas as pd
-
-from transformers import pipeline
-
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 
 
 '''
 This file takes from an existing features .csv file, and creates the emotion graph based on that.
-It does not extract data in the loop. It also uses facebook bart large mnli zero-shot classification to
-infer cross-modal relations, because its free and efficient.
+It does not extract data in the loop. It also uses Groq API Llama LLM (free) to
+infer cross-modal relations, because its free and efficient. If you don't have a Groq API, you need to create a .env file and put it in there.
 '''
+
+
+#Intended for GROQ API Usage
+'''
+
+try:
+    os.environ['GROQ_API_KEY'] = userdata.get('GROQ_API_KEY')
+except:
+    pass  # Running locally, .env handles it
+'''
+
+
+
+
+
 
 #Global var for all features, specifically for the MELD dataset.
 features_df = pd.read_csv('/content/drive/MyDrive/MELD.Raw/all_features.csv')
-classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+torch.random.manual_seed(0) 
 
+
+model = AutoModelForCausalLM.from_pretrained( 
+    "microsoft/Phi-3-mini-4k-instruct",  
+    device_map="cuda",  
+    torch_dtype="auto",  
+    trust_remote_code=True,  
+) 
+
+#load the tokenizer
+tokenizer = AutoTokenizer.from_pretrained("microsoft/Phi-3-mini-4k-instruct")
+
+pipe = pipeline("text-generation", model = model, tokenizer = tokenizer)
 
 # Function to extract and classify audio features to labels on filename alone, assuming that the folders
 #Are in the right place.  Returns a list of dictionary of the features, labelled from ID 1 to 7 for downstream
@@ -37,7 +63,7 @@ def extract_audio_features(filename):
         intensity = row_features['intensity']
         syllables_rate = row_features['syllables_rate']
         speech_rate = row_features['speech_rate']
-        duration = row_features['duration']
+        
         
         #assign labels "fast", "normal", "slow", or appropiately , "high", "normal", "low" for features.
         pitch_label = "high" if pitch > 39.7 else "normal" if pitch >= 32.0 else "low"
@@ -46,7 +72,7 @@ def extract_audio_features(filename):
         shimmer_label = "high" if shimmer > 1.306 else "normal" if shimmer >= 1.025 else "low"
         intensity_label = "high" if intensity > 0.0017 else "normal" if intensity >= 0.0007 else "low"
         syllables_label = "high" if syllables_rate > 6.287 else "normal" if syllables_rate >= 1.294 else "low"
-        volume_label = "loud" if volume > 0.607 else "normal" if volume >= 0.429 else "soft"
+        loudness_label = "loud" if loudness > 0.607 else "normal" if loudness >= 0.429 else "soft"
 
 
         return [
@@ -56,7 +82,7 @@ def extract_audio_features(filename):
             {"id": "4", "feature": "shimmer", "value": shimmer_label},
             {"id": "5", "feature": "intensity", "value": intensity_label},
             {"id": "6", "feature": "syllables", "value": syllables_label},
-            {"id": "7", "feature": "volume", "value": volume_label},
+            {"id": "7", "feature": "loudness", "value": loudness_label},
         ]
     
 
@@ -69,7 +95,7 @@ def extract_audio_features(filename):
             {"id": "4", "feature": "shimmer", "value": "unknown"},
             {"id": "5", "feature": "intensity", "value": "unknown"},
             {"id": "6", "feature": "syllables", "value": "unknown"},
-            {"id": "7", "feature": "volume", "value": "unknown"},
+            {"id": "7", "feature": "loudness", "value": "unknown"},
         ]
 
 # Extract it from our all_features.csv file directly without having to recompute.
@@ -91,23 +117,36 @@ def get_sentiment(filename):
 # Function to generate relationships using LLM
 #audio_feature: pitch, volume, intensity, etc.
 #feature_label: low, normal, high / slow, normal, fast
-def get_relation_with_llm(audio_feature, feature_label, sentiment):
+def get_relation_with_llm(utterance, audio_feature, feature_label, sentiment):
 
-    
-    candidate_labels = ['supports', 'is neutral to', 'contradicts']
-
-    text = f"The {audio_feature} is {feature_label}. The sentiment is {sentiment}."
-
-
-    #takes the text, possible labels, and the hypothesis to classify one of the three.
-    result = classifier(
-        text,
-        candidate_labels,
-        hypothesis_template = "This acoustic feature {} the sentiment. "
+    prompt = (
+        
+        f"<|user|>\nYou are tasked with determining how an audio feature interacts with the emotion in a text. Follow these steps to analyze:\n\n"
+        f"1. **Understand the text emotion**: Read the text '{utterance}'. Its sentiment is {sentiment}. \n"
+        f"2. **Interpret the audio feature**: The audio feature is '{audio_feature}' with value '{feature_label}'. Use this guide:\n"
+        f"   - Pitch: High = energetic or happy, Low = calm or sad.\n"
+        f"   - Rate: Fast = excited or urgent, Slow = calm or thoughtful.\n"
+        f"   - Volume: Loud = intense or strong, Soft = gentle or weak.\n"
+        f"3. **Compare and reason**: Does the audio feature match the text's emotion, contradict it, or have no clear effect? For example:\n"
+        f"   - Happy text + High pitch = Matches (supports).\n"
+        f"   - Sad text + High pitch = Contradicts (conflicts).\n"
+        f"   - Calm text + Medium pitch = No strong effect (neutral).\n"
+        f"4. **Answer**: Based on your reasoning, choose one word: supports, conflicts, or neutral.\n\n"
+        f"Provide your answer as a single word. <|end|>\n<|assistant|>\n"
     )
 
+    #deterministic outcome, always pick the highest likelihood answer
+    response = pipe(prompt, max_new_tokens = 40, num_return_sequences=1, do_sample = False, truncation = True)
+    generated_text = response[0]['generated_text'][len(prompt):].strip().lower() #grab the text after the prompt
     
-    return result['labels'][0]
+    if "supports" in generated_text:
+        return "supports"
+    elif "conflicts" in generated_text:
+        return "conflicts"
+    elif "neutral" in generated_text:
+        return "neutral"
+    else:
+        return "unknown"
 
 
 #Builds the full emotion graph based on files from all_features.csv and saves it to emotion_graph_dir
@@ -138,13 +177,13 @@ def build_emotion_graph(emotion_graph_dir):
 
         #create cross-modal graph of feature to sentiment
         relationships = [
-            {"from": "1", "to": "8", "relation": get_relation_with_llm(audio_features[0]['feature'], audio_features[0]['value'], predicted_sentiment)},
-            {"from": "2", "to": "8", "relation": get_relation_with_llm(audio_features[1]['feature'], audio_features[1]['value'], predicted_sentiment)},
-            {"from": "3", "to": "8", "relation": get_relation_with_llm(audio_features[2]['feature'], audio_features[2]['value'], predicted_sentiment)},
-            {"from": "4", "to": "8", "relation": get_relation_with_llm(audio_features[3]['feature'], audio_features[3]['value'], predicted_sentiment)},
-            {"from": "5", "to": "8", "relation": get_relation_with_llm(audio_features[4]['feature'], audio_features[4]['value'], predicted_sentiment)},
-            {"from": "6", "to": "8", "relation": get_relation_with_llm(audio_features[5]['feature'], audio_features[5]['value'], predicted_sentiment)},
-            {"from": "7", "to": "8", "relation": get_relation_with_llm(audio_features[6]['feature'], audio_features[6]['value'], predicted_sentiment)},
+            {"from": "1", "to": "8", "relation": get_relation_with_llm(utterance, audio_features[0]['feature'], audio_features[0]['value'], predicted_sentiment)},
+            {"from": "2", "to": "8", "relation": get_relation_with_llm(utterance, audio_features[1]['feature'], audio_features[1]['value'], predicted_sentiment)},
+            {"from": "3", "to": "8", "relation": get_relation_with_llm(utterance, audio_features[2]['feature'], audio_features[2]['value'], predicted_sentiment)},
+            {"from": "4", "to": "8", "relation": get_relation_with_llm(utterance, audio_features[3]['feature'], audio_features[3]['value'], predicted_sentiment)},
+            {"from": "5", "to": "8", "relation": get_relation_with_llm(utterance, audio_features[4]['feature'], audio_features[4]['value'], predicted_sentiment)},
+            {"from": "6", "to": "8", "relation": get_relation_with_llm(utterance, audio_features[5]['feature'], audio_features[5]['value'], predicted_sentiment)},
+            {"from": "7", "to": "8", "relation": get_relation_with_llm(utterance, audio_features[6]['feature'], audio_features[6]['value'], predicted_sentiment)},
         ]
 
         emotion_graph = {
@@ -152,6 +191,7 @@ def build_emotion_graph(emotion_graph_dir):
             "text": text_data,
             "relationships": relationships
         }
+        #Replacing the .wav with .json
         output_filename = f"emotion_graph_{filename.replace('.wav', '')}.json"
         
         output_path = os.path.join(emotion_graph_dir, output_filename)
