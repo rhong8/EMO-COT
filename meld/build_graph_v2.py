@@ -33,7 +33,7 @@ torch.random.manual_seed(0)
 
 
 model = AutoModelForCausalLM.from_pretrained(
-    "microsoft/Phi-3-mini-4k-instruct",
+    "microsoft/Phi-3.5-mini-4k-instruct",
     device_map="cuda",
     torch_dtype="auto",
     trust_remote_code=True,
@@ -41,7 +41,7 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 #load the tokenizer
-tokenizer = AutoTokenizer.from_pretrained("microsoft/Phi-3-mini-4k-instruct")
+tokenizer = AutoTokenizer.from_pretrained("microsoft/Phi-3.5-mini-instruct")
 
 pipe = pipeline("text-generation", model = model, tokenizer = tokenizer)
 
@@ -56,7 +56,7 @@ def extract_audio_features(filename):
         #get volume, jitter, shimmer, and intensity from smile
 
 
-        #grab mean data from pre-loaded csv instead of extracting again
+        #grab data from pre-loaded csv instead of extracting again
         pitch = row_features['pitch']
         loudness = row_features['loudness']
         jitter = row_features['jitter']
