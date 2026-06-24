@@ -16,7 +16,14 @@ smile = opensmile.Smile(
 
 #YOUR GROUND TRUTH DATA HERE
 ground_truth = 'MELD/data/MELD/test_sent_emo.csv'
+
+#YOUR ALL FEATURES FILE HERE (ONLY FOR DEBUGGING PURPOSES)
+AF = '/content/drive/MyDrive/MELD.Raw/all_features.csv'
+
+
 df = pd.read_csv(ground_truth)
+
+all_features = pd.read_csv(AF)
 
 def convert_to_wav(audio_dir, wav_dir):
     os.makedirs(wav_dir, exist_ok=True)
@@ -220,6 +227,47 @@ def calculate_corpus_stats(wav_dir, cache_path, json_path):
         json.dump(stats, f, indent=4)
 
 
+#assuming the all_features is loaded
+def calculate_individual_file(filename):
+    
+    full_path = os.path.join('content/drive/MyDrive/output_repeated_splits_test_wav/', filename)
+
+    if not os.path.exists(full_path):
+        print(f"Error. {full_path} does not exist.")
+        return
+    
+
+    #utterance = get_utterance(full_path)
+    utterance = df[df['filename'] == 'dia0_utt0.wav'].iloc[0]['Utterance']
+
+    audio, sr = librosa.load(file_path, sr=None)
+    features = smile.process_file(file_path)
+    duration = librosa.get_duration(y=audio, sr=sr)
+
+    pitch = features['F0semitoneFrom27.5Hz_sma3nz_amean'].values[0]
+    loudness = features['loudness_sma3_amean'].values[0]
+    jitter = features['jitterLocal_sma3nz_amean'].values[0]
+    shimmer = features['shimmerLocaldB_sma3nz_amean'].values[0]
+    intensity = np.mean(audio**2)
+    syllables_rate = textstat.syllable_count(utterance) / duration
+    speech_rate = textstat.lexicon_count(utterance) / duration
+
+    print(f"""
+    File: {filename}
+    Utterance: {utterance}
+    Duration: {duration:.2f}s
+
+    Pitch:        {pitch:.4f}
+    Loudness:     {loudness:.4f}
+    Jitter:       {jitter:.4f}
+    Shimmer:      {shimmer:.4f}
+    Intensity:    {intensity:.6f}
+    Syllables/s:  {syllables_rate:.4f}
+    Speech rate:  {speech_rate:.4f}
+    """)
+
+    
+
 if __name__ == '__main__':
     audio_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test' #YOUR RAW DATA PATH HERE
     wav_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test_wav/' #YOUR DATA, IN WAV FILE PATH HERE
@@ -227,4 +275,6 @@ if __name__ == '__main__':
     cache_path = '/content/drive/MyDrive/MELD.Raw/acoustic_features_v2.csv' #YOUR FEATURE SAVE PATH HERE
 
     
-    calculate_corpus_stats(wav_dir, cache_path, json_path)
+    #calculate_corpus_stats(wav_dir, cache_path, json_path)
+    calculate_individual_file('dia69_utt3.wav')
+    
