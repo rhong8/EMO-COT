@@ -153,7 +153,7 @@ def get_relation_with_llm(utterance, audio_feature, feature_label, sentiment):
 #Builds the full emotion graph based on files from all_features.csv and saves it to emotion_graph_dir
 def build_emotion_graph(emotion_graph_dir):
     print("Building the emotion graph...")
-    existing_files = os.listdir(emotion_graph_dir)
+    #existing_files = os.listdir(emotion_graph_dir)
     i = 1
 
     for idx, row in features_df.iterrows():
@@ -165,11 +165,13 @@ def build_emotion_graph(emotion_graph_dir):
         output_filename = f"emotion_graph_{filename.replace('.wav', '')}.json"
         
         output_path = os.path.join(emotion_graph_dir, output_filename)
-
+        '''
         if output_filename in existing_files:
             print(f"{output_filename} has already been processed. skipping")
             continue
-        
+        '''
+
+
         utterance = row['Utterance']
         
         predicted_sentiment = get_sentiment(filename)
