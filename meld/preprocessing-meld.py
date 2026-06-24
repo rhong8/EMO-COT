@@ -238,10 +238,10 @@ def calculate_individual_file(filename):
     
 
     #utterance = get_utterance(full_path)
-    utterance = df[df[filename] == 'dia0_utt0.wav'].iloc[0]['Utterance']
+    utterance = df[df['filename'] == filename].iloc[0]['Utterance']
 
-    audio, sr = librosa.load(file_path, sr=None)
-    features = smile.process_file(file_path)
+    audio, sr = librosa.load(full_path, sr=None)
+    features = smile.process_file(full_path)
     duration = librosa.get_duration(y=audio, sr=sr)
 
     pitch = features['F0semitoneFrom27.5Hz_sma3nz_amean'].values[0]
