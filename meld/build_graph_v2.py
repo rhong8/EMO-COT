@@ -155,7 +155,7 @@ def build_emotion_graph(emotion_graph_dir):
     print("Building the emotion graph...")
     #existing_files = os.listdir(emotion_graph_dir)
     i = 1
-
+    pipe.model.generation_config.max_length = None #surpress the warning that max_new_tokens take precedence
     for idx, row in features_df.iterrows():
         filename = row['filename']
 
