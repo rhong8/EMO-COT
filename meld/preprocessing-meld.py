@@ -238,7 +238,7 @@ def calculate_individual_file(filename):
     
 
     #utterance = get_utterance(full_path)
-    utterance = AF[AF['filename'] == filename].iloc[0]['Utterance']
+    utterance = all_features[all_features['filename'] == filename].iloc[0]['Utterance']
 
     audio, sr = librosa.load(full_path, sr=None)
     features = smile.process_file(full_path)
