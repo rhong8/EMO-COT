@@ -52,10 +52,13 @@ def get_sentiment(utterance):
 
 def get_keyword(utterance):
 
-    keywords = kw_model.extract_keywords(utterance, keyphrase_ngram_range=(1, 1), stop_words=None)
-    keyword = keywords[0][0]
-
-    return keyword if keywords else "unknown"
+    try:
+        keywords = kw_model.extract_keywords(utterance, keyphrase_ngram_range=(1, 1), stop_words=None)
+        keyword = keywords[0][0]
+        return keyword
+    except Exception as e:
+        printf(f"An exception occured while extracting keyword from utterance {utterance}: {e}")
+        return "unknown"
 
 
 def convert_to_wav(audio_dir, wav_dir):
