@@ -57,7 +57,7 @@ def get_keyword(utterance):
         keyword = keywords[0][0]
         return keyword
     except Exception as e:
-        printf(f"An exception occured while extracting keyword from utterance {utterance}: {e}")
+        print(f"An exception occured while extracting keyword from utterance {utterance}: {e}")
         return "unknown"
 
 
