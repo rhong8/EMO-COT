@@ -230,7 +230,7 @@ def calculate_corpus_stats(wav_dir, cache_path, json_path):
 #assuming the all_features is loaded
 def calculate_individual_file(filename):
     
-    full_path = os.path.join('content/drive/MyDrive/output_repeated_splits_test_wav/', filename)
+    full_path = os.path.join('content/drive/MyDrive/MELD.Raw/output_repeated_splits_test_wav/', filename)
 
     if not os.path.exists(full_path):
         print(f"Error. {full_path} does not exist.")
@@ -277,4 +277,3 @@ if __name__ == '__main__':
     
     #calculate_corpus_stats(wav_dir, cache_path, json_path)
     calculate_individual_file('dia69_utt3.wav')
-    
