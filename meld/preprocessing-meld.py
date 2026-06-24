@@ -9,6 +9,18 @@ import re
 import subprocess
 import json
 
+
+from keybert import KeyBERT
+from transformers import pipeline
+
+
+sentiment_analyzer = pipeline(
+    "sentiment-analysis",
+    model="cardiffnlp/twitter-roberta-base-sentiment"
+)
+
+kw_model = KeyBERT()
+
 smile = opensmile.Smile(
     feature_set=opensmile.FeatureSet.eGeMAPSv02,
     feature_level=opensmile.FeatureLevel.Functionals,
@@ -24,6 +36,27 @@ AF = '/content/drive/MyDrive/MELD.Raw/all_features.csv'
 df = pd.read_csv(ground_truth)
 
 all_features = pd.read_csv(AF)
+
+
+#Get the sentiment from the utterance
+def get_sentiment(utterance):
+    result = sentiment_analyzer(utterance)[0]
+    label = result['label'].lower()
+    if label == 'label_0':
+        return "negative"
+    elif label == 'label_1':
+        return "objective"
+    elif label == 'label_2':
+        return "positive"
+
+
+def get_keyword(utterance):
+
+    keywords = kw_model.extract_keywords(utterance, keyphrase_ngram_range=(1, 1), stop_words=None)
+    keyword = keywords[0][0]
+
+    return keyword if keywords else "unknown"
+
 
 def convert_to_wav(audio_dir, wav_dir):
     os.makedirs(wav_dir, exist_ok=True)
@@ -227,6 +260,36 @@ def calculate_corpus_stats(wav_dir, cache_path, json_path):
         json.dump(stats, f, indent=4)
 
 
+#Calculates the sentiment and keyword using RoBERTa and keyword using KeyBERT, saving it to the processed cache_path.
+
+def calculate_sentiment_keyword(wav_dir, cache_path):
+    valid_files = clean_files(wav_dir)
+    i = 0
+    
+    for file in valid_files:
+        if not file.endswith('.wav'):
+            continue
+        
+        file_path = os.path.join(wav_dir, file)
+        utterance = get_utterance(file_path)
+        sentiment = get_sentiment(utterance)
+        keyword = get_keyword(utterance)
+        all_features.loc[df['filename'] == file, 'sentiment'] = sentiment
+        all_features.loc[df['filename'] == file, 'keyword'] =  keyword
+        
+        if i % 99 == 0:
+            print(f"Processed keyword and sentiment for file {i+1}..")
+        i += 1
+    try:
+        all_features.to_csv(cache_path, index = False)
+    except Exception as e:
+        print(f"An exception occured in saving. {e}")
+    
+
+
+    
+
+
 #assuming the all_features is loaded
 def calculate_individual_file(filename):
     
@@ -272,8 +335,11 @@ if __name__ == '__main__':
     audio_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test' #YOUR RAW DATA PATH HERE
     wav_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test_wav/' #YOUR DATA, IN WAV FILE PATH HERE
     json_path = '/content/drive/MyDrive/MELD.Raw/corpus_stats_v2.json' #YOUR .JSON SAVE PATH HERE
-    cache_path = '/content/drive/MyDrive/MELD.Raw/acoustic_features_v2.csv' #YOUR FEATURE SAVE PATH HERE
+    cache_path = '/content/drive/MyDrive/MELD.Raw/all_features.csv' #YOUR FEATURE SAVE PATH HERE
 
-    
+    #USE WHEN CALCULATING STATISTICAL VALUES FOR CORPUS
     #calculate_corpus_stats(wav_dir, cache_path, json_path)
-    calculate_individual_file('dia69_utt3.wav')
+    
+    
+    #USE WHEN CALCULATING SENTIMENT AND KEYWORD
+    calculate_sentiment_keyword(wav_dir, cache_path)
