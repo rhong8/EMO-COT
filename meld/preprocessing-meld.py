@@ -274,8 +274,8 @@ def calculate_sentiment_keyword(wav_dir, cache_path):
         utterance = get_utterance(file_path)
         sentiment = get_sentiment(utterance)
         keyword = get_keyword(utterance)
-        all_features.loc[df['filename'] == file, 'sentiment'] = sentiment
-        all_features.loc[df['filename'] == file, 'keyword'] =  keyword
+        all_features.loc[all_features['filename'] == file, 'sentiment'] = sentiment
+        all_features.loc[all_features['filename'] == file, 'keyword'] =  keyword
         
         if i % 99 == 0:
             print(f"Processed keyword and sentiment for file {i+1}..")
