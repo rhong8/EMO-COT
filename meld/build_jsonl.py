@@ -3,7 +3,7 @@ import json
 import re
 import pandas as pd
 
-wav_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_test_splits_wav'
+wav_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test_wav'
 emotion_graph_dir = '/content/drive/MyDrive/MELD.Raw/emotion-graph'
 ground_truth = pd.read_csv('/content/drive/MyDrive/MELD.Raw/test_sent_emo.csv')
 jsonl_path = '/content/drive/MyDrive/MELD.Raw/meld_eval.jsonl'
@@ -14,7 +14,7 @@ def construct_jsonl():
     with open(jsonl_path, 'w') as f:
         for filename in os.listdir(wav_dir):
             try:
-                print(f"processing file {i}")
+                
 
                 numbers = re.findall(r'\d+', filename)
                 dia_id = int(numbers[0])
@@ -60,9 +60,19 @@ def construct_jsonl():
                     "gt": label_letter
                 }
                 f.write(json.dumps(item) + '\n')
+
+                if i % 100 == 99:
+                    print(f"Processed file {i + 1}")
+
+
+
                 i += 1
+
+
+
+
             except Execption as e:
-                print(f"Exception occured at file {filename}: {e} ")
+                print(f"Exception occured at file {filename}, file no {i + 1} : {e} ")
                 continue
             
 
