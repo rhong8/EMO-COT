@@ -165,11 +165,11 @@ def build_emotion_graph(emotion_graph_dir):
         output_filename = f"emotion_graph_{filename.replace('.wav', '')}.json"
         
         output_path = os.path.join(emotion_graph_dir, output_filename)
-        '''
+        
         if output_filename in existing_files:
             print(f"{output_filename} has already been processed. skipping")
             continue
-        '''
+        
 
 
         utterance = row['Utterance']
