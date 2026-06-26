@@ -1,8 +1,9 @@
 import json
 import re
+from collections import Counter
 from sklearn.metrics import accuracy_score, recall_score, f1_score
 
-results_file = '/content/drive/MyDrive/MELD.Raw/meld_260626054936.json'  # replace with your actual filename
+results_file = '/content/meld_250609xxxxxx.json'  # replace with your actual filename
 
 emotion_to_letter = {
     'neutral': 'A',
@@ -18,17 +19,12 @@ emotion_to_letter = {
 
 def extract_label(response):
     response_clean = response.strip().lower()
-    
-    # check for single letter first
     match = re.search(r'\b([a-e])\b', response_clean)
     if match:
         return match.group(1).upper()
-    
-    # check for emotion word
     for emotion, letter in emotion_to_letter.items():
         if emotion in response_clean:
             return letter
-    
     return response_clean.strip()
 
 with open(results_file) as f:
@@ -36,17 +32,13 @@ with open(results_file) as f:
 
 refs, hyps = [], []
 for result in results:
-    gt = result['gt']
-    response = extract_label(result['response'])
-    refs.append(gt)
-    hyps.append(response)
+    refs.append(result['gt'])
+    hyps.append(extract_label(result['response']))
 
-# verify extraction
-for i in range(5):
-    print(f"GT: {repr(refs[i])} | Extracted: {repr(hyps[i])} | Raw: {repr(results[i]['response'])}")
+print("Prediction distribution:", Counter(hyps))
+print("Ground truth distribution:", Counter(refs))
 
 labels = sorted(list(set(refs + hyps)))
-
 acc = accuracy_score(refs, hyps)
 wa = recall_score(refs, hyps, average='weighted', labels=labels, zero_division=0)
 ua = recall_score(refs, hyps, average='macro', labels=labels, zero_division=0)
