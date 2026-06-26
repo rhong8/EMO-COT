@@ -13,6 +13,8 @@ from functools import partial
 import torch
 import requests
 
+from build_jsonl import parse_response
+
 from tqdm import tqdm
 from transformers import AutoProcessor, Qwen2AudioForConditionalGeneration
 from transformers.pipelines.audio_utils import ffmpeg_read
@@ -174,7 +176,7 @@ if __name__ == '__main__':
         for item in results:
             audio = item["audio_path"]
             gt = item["gt"]
-            pred = item["response"].strip().lower()
+            pred = parse_response(item["response"]) or item["response"].strip().lower()
             f.write(f"AUDIO: {audio}\nGT: {gt}\nPREDICT: {pred}\n\n")
     print(f"Written to {txt_file}")
     
@@ -189,7 +191,7 @@ if __name__ == '__main__':
         results_list = results_dict[source]
         for result in results_list:
             gt = result["gt"]
-            response = result["response"].lstrip().lower()
+            response = parse_response(result["response"]) or result["response"].strip().lower()
             refs.append(gt)
             hyps.append(response)
 
