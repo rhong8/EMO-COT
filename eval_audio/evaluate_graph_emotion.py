@@ -137,7 +137,8 @@ if __name__ == '__main__':
             'audio_path': audio_path,
         })
     time_prefix = time.strftime('%y%m%d%H%M%S', time.localtime())
-    results_file = f'{args.dataset}_{time_prefix}.json'
+    #results_file = f'{args.dataset}_{time_prefix}.json'
+    results_file = f'/content/drive/MyDrive/MELD.Raw/{args.dataset}_{time_prefix}.json'
     json.dump(results, open(results_file, 'w'))
 
     # Group results by source dataset for per-dataset metric calculation.
