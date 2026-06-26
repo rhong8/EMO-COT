@@ -68,7 +68,7 @@ def collate_fn(inputs, processor):
     gt = [_['gt'] for _ in inputs]
     audio_path = [_['audio'] for _ in inputs]
     input_audios = [ffmpeg_read(read_audio(_['audio']), sampling_rate=processor.feature_extractor.sampling_rate) for _ in inputs]
-    inputs = processor(text=input_texts, audios=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
+    inputs = processor(text=input_texts, audio=input_audios, return_tensors="pt", padding=True)
     return inputs, audio_path, source, gt
 
 if __name__ == '__main__':
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     # The processor handles both text tokenization and audio feature extraction.
     if args.checkpoint == 'Qwen/Qwen2-Audio-7B':
         model = Qwen2AudioForConditionalGeneration.from_pretrained(
-            args.checkpoint, device_map='cuda', trust_remote_code=True, torch_dtype='auto').eval()
+            args.checkpoint, device_map='cuda', torch_dtype='auto').eval()
         processor = AutoProcessor.from_pretrained(args.checkpoint)
     else:
         model = Qwen2_5OmniForConditionalGeneration.from_pretrained("Qwen/Qwen2.5-Omni-7B", torch_dtype="auto", device_map="auto")
