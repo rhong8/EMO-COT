@@ -4,9 +4,32 @@ from sklearn.metrics import accuracy_score, recall_score, f1_score
 
 results_file = '/content/drive/MyDrive/MELD.Raw/meld_260626054936.json'  # replace with your actual filename
 
+emotion_to_letter = {
+    'neutral': 'A',
+    'happy': 'B',
+    'joy': 'B',
+    'sad': 'C',
+    'sadness': 'C',
+    'surprised': 'D',
+    'surprise': 'D',
+    'angry': 'E',
+    'anger': 'E',
+}
+
 def extract_label(response):
-    match = re.search(r'\b([A-E])\b', response)
-    return match.group(1) if match else response.strip()
+    response_clean = response.strip().lower()
+    
+    # check for single letter first
+    match = re.search(r'\b([a-e])\b', response_clean)
+    if match:
+        return match.group(1).upper()
+    
+    # check for emotion word
+    for emotion, letter in emotion_to_letter.items():
+        if emotion in response_clean:
+            return letter
+    
+    return response_clean.strip()
 
 with open(results_file) as f:
     results = json.load(f)
@@ -14,11 +37,11 @@ with open(results_file) as f:
 refs, hyps = [], []
 for result in results:
     gt = result['gt']
-    response = extract_label(result['response'].lstrip())
+    response = extract_label(result['response'])
     refs.append(gt)
     hyps.append(response)
 
-# print a few to verify extraction is working
+# verify extraction
 for i in range(5):
     print(f"GT: {repr(refs[i])} | Extracted: {repr(hyps[i])} | Raw: {repr(results[i]['response'])}")
 
