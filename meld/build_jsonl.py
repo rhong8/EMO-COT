@@ -57,7 +57,7 @@ def construct_jsonl():
                     f"Emotion Graph:\n{graph_str}\n"
                     f"Use the audio and emotion graph as context and answer the following question.\n"
                     f"Task: Recognize the emotion with keywords in English: (A) Neutral (B) Happy (C) Sad (D) Surprised (E) Angry\n"
-                    f"Answer with the option letter (A, B, C, D, or E)"
+                    f"Answer only with the option letter and nothing else (A, B, C, D, or E)"
                 )
 
                 row = ground_truth[
