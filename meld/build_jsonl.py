@@ -39,7 +39,6 @@ def parse_response(response: str) -> str | None:
 def construct_jsonl():
     i = 0
 
-    
     with open(jsonl_path, 'w') as f:
 
 
@@ -59,9 +58,9 @@ def construct_jsonl():
 
                 prompt_string = (
                     f"Emotion Graph:\n{graph_str}\n"
-                    f"Use the audio and emotion graph as context and answer the following question.\n"
+                    f"Given the audio and emotion graph as context, answer the following question.\n"
                     f"Task: Recognize the emotion with keywords in English: (A) Neutral (B) Happy (C) Sad (D) Surprised (E) Angry\n"
-                    f"Answer only with the option letter and nothing else (A, B, C, D, or E)"
+                    f"Answer ONLY with the option letter and nothing else (A, B, C, D, or E)"
                 )
 
                 row = ground_truth[
