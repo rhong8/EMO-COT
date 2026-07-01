@@ -4,7 +4,7 @@ import re
 import pandas as pd
 
 wav_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test_wav'
-emotion_graph_dir = '/content/drive/MyDrive/MELD.Raw/emotion-graph'
+emotion_graph_dir = '/content/drive/MyDrive/MELD.Raw/emotion-graph-2'
 ground_truth = pd.read_csv('/content/drive/MyDrive/MELD.Raw/test_sent_emo.csv')
 jsonl_path = '/content/drive/MyDrive/MELD.Raw/meld_eval.jsonl'
 

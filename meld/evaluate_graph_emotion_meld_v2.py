@@ -29,14 +29,14 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # }
 ds_collections = {
     'meld': {'path': 'ser/meld_eval.jsonl'},
-    'iemocap': {'path': 'ser/iemocap_eval.jsonl'},
-    'merr_test1': {'path': 'ser/merr_eval_test1.jsonl'},
-    'merr_test2': {'path': 'ser/merr_eval_test2.jsonl'}
+    #'iemocap': {'path': 'ser/iemocap_eval.jsonl'},
+    #'merr_test1': {'path': 'ser/merr_eval_test1.jsonl'},
+    #'merr_test2': {'path': 'ser/merr_eval_test2.jsonl'}
 }
 
 
 wav_path = 'content/drive/MyDrive/MELD.Raw/output_repeated_splits_test_wav' #YOUR WAV PATH HERE
-emotion_path = 'content/drive/MyDrive/MELD.Raw/emotion-graph'
+emotion_path = 'content/drive/MyDrive/MELD.Raw/emotion-graph-2'
 
 
 # Dataset class
@@ -86,7 +86,7 @@ def collate_fn(inputs, processor):
         if args.dataset == "iemocap":
             emotion_graph_path = os.path.join('iemocap/emotion_graph', f'emotion_graph_{identifier}.json')
         elif args.dataset == "meld":
-            emotion_graph_path = os.path.join('meld/emotion_graph', f'emotion_graph_{identifier}.json')
+            emotion_graph_path = os.path.join(emotion_path, f'emotion_graph_{identifier}.json')
         elif args.dataset == "merr_test1":
             emotion_graph_path = os.path.join('MERR_toolbox/EmotionGraph/test1', f'{identifier}.json')
         else:
@@ -102,7 +102,8 @@ def collate_fn(inputs, processor):
         
         # Build new prompt
         original_prompt = item['prompt']
-        new_prompt = f"<|audio_bos|><|AUDIO|><|audio_eos|>Based on Emotion Graph: {emotion_graph_str} {original_prompt}"
+        #need to load a custom prompt
+        new_prompt = f"<|audio_bos|><|AUDIO|><|audio_eos|>Based on Emotion Graph: {emotion_graph_str}"
         input_texts.append(new_prompt)
     
     # Use processor to process inputs
@@ -112,8 +113,8 @@ def collate_fn(inputs, processor):
 if __name__ == '__main__':
     # Parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint', type=str, default='Qwen/Qwen2-Audio-7B')
-    #parser.add_argument('--checkpoint', type=str, default='Qwen/Qwen2.5-Omni-7B')
+    #parser.add_argument('--checkpoint', type=str, default='Qwen/Qwen2-Audio-7B')
+    parser.add_argument('--checkpoint', type=str, default='Qwen/Qwen2.5-Omni-7B')
     parser.add_argument('--dataset', type=str, default='meld')
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--num-workers', type=int, default=1)
