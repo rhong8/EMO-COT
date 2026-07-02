@@ -20,7 +20,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import recall_score, f1_score
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-meld_path = {'path: /content/drive/MyDrive/MELD.Raw/meld_eval.jsonl'}
+meld_path = {'path' : '/content/drive/MyDrive/MELD.Raw/meld_eval.jsonl'} #YOUR PATH HERE
 #meld_path =  {'path: /ser/meld_eval.jsonl'} #Default for running locally
 # Dataset configuration
 # ds_collections = {
