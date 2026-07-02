@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
-
+from google.colab import userdata
 
 '''
 This file takes from an existing features .csv file, and creates the emotion graph based on that.
@@ -14,13 +14,13 @@ infer cross-modal relations, because its free and efficient. If you don't have a
 
 
 #Intended for GROQ API Usage
-'''
 
-try:
-    os.environ['GROQ_API_KEY'] = userdata.get('GROQ_API_KEY')
+
+try: #If using colab, save a secret to Colab secrets
+    api_key = userdata.get('GROQ_API_KEY')
 except:
     pass  # Running locally, .env handles it
-'''
+
 
 
 

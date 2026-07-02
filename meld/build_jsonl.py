@@ -41,7 +41,6 @@ def construct_jsonl():
 
     with open(jsonl_path, 'w') as f:
 
-
         for filename in os.listdir(wav_dir):
             try:
                 numbers = re.findall(r'\d+', filename)
@@ -51,6 +50,7 @@ def construct_jsonl():
                 emotion_graph_filename = f"emotion_graph_{filename.replace('.wav', '')}.json"
                 emotion_graph_path = os.path.join(emotion_graph_dir, emotion_graph_filename)
                 wav_path = os.path.join(wav_dir, filename)
+                
 
                 with open(emotion_graph_path) as ef:
                     graph = json.load(ef)

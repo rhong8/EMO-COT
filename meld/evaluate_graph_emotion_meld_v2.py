@@ -95,7 +95,7 @@ def collate_fn(inputs, processor):
         try:
             with open(emotion_graph_path, 'r', encoding='utf-8') as f:
                 emotion_graph = json.load(f)
-            emotion_graph_str = json.dumps(emotion_graph, ensure_ascii=False)
+            emotion_graph_str = json.dumps(emotion_graph, ensure_ascii=False) #returns a string
         except Exception as e:
             print(f"Failed to load Emotion Graph: {emotion_graph_path}, error: {e}")
             emotion_graph_str = "{}"  # If it fails, default to an empty dictionary
@@ -103,7 +103,7 @@ def collate_fn(inputs, processor):
         # Build new prompt
         original_prompt = item['prompt']
         #need to load a custom prompt
-        new_prompt = f"<|audio_bos|><|AUDIO|><|audio_eos|>Based on Emotion Graph: {emotion_graph_str}"
+        new_prompt = f"<|audio_bos|><|AUDIO|><|audio_eos|> {original_prompt} {emotion_graph_str}./"
         input_texts.append(new_prompt)
     
     # Use processor to process inputs
@@ -113,8 +113,8 @@ def collate_fn(inputs, processor):
 if __name__ == '__main__':
     # Parse command line arguments
     parser = argparse.ArgumentParser()
-    #parser.add_argument('--checkpoint', type=str, default='Qwen/Qwen2-Audio-7B')
-    parser.add_argument('--checkpoint', type=str, default='Qwen/Qwen2.5-Omni-7B')
+    parser.add_argument('--checkpoint', type=str, default='Qwen/Qwen2-Audio-7B')
+    #parser.add_argument('--checkpoint', type=str, default='Qwen/Qwen2.5-Omni-7B')
     parser.add_argument('--dataset', type=str, default='meld')
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--num-workers', type=int, default=1)

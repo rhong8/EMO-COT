@@ -118,7 +118,7 @@ if __name__ == '__main__':
     audio_paths = []
     for _, (inputs, audio_path, source, gt) in tqdm(enumerate(data_loader)):
         inputs = {k: v.to('cuda') if isinstance(v, torch.Tensor) else v for k, v in inputs.items()}
-        output_ids = model.generate(**inputs, max_new_tokens=256, min_new_tokens=1, do_sample=False)
+        output_ids = model.generate(**inputs, max_new_tokens=2  0, min_new_tokens=1, do_sample=False)
         output_ids = output_ids[:, inputs['input_ids'].size(1):]
         output = processor.batch_decode(output_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
         gts.extend(gt)

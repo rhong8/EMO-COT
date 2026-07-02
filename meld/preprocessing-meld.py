@@ -27,7 +27,7 @@ smile = opensmile.Smile(
 )
 
 #YOUR GROUND TRUTH DATA HERE
-ground_truth = 'MELD/data/MELD/test_sent_emo.csv'
+ground_truth = '/content/MELD/data/MELD/test_sent_emo.csv'
 
 #YOUR ALL FEATURES FILE HERE (ONLY FOR DEBUGGING PURPOSES)
 AF = '/content/drive/MyDrive/MELD.Raw/all_features.csv'
@@ -201,7 +201,7 @@ def calculate_corpus_stats(wav_dir, cache_path, json_path):
         })
 
 
-        if file_count % 100 == 99:
+        if file_count + 1 % 100 == 0:
             print(f"Processing file {file_count + 1}")
         file_count += 1
 
