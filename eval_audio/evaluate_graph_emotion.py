@@ -34,6 +34,13 @@ class AudioDataset(torch.utils.data.Dataset):
     def __init__(self, ds):
         path = ds['path']
         self.datas = open(path).readlines()
+        
+        self.task = (
+        "Given the audio file and emotion graph, complete the following task."
+        "Task: Recognize the emotion with keywords in English: "
+        "(A) Neutral (B) Happy (C) Sad (D) Surprised (E) Angry\n"
+        "Answer ONLY with the option letter (A, B, C, D, or E).\n"
+        )
 
     def __len__(self):
         return len(self.datas)
@@ -42,7 +49,7 @@ class AudioDataset(torch.utils.data.Dataset):
         data = json.loads(self.datas[idx].strip())
         audio = data['audio']
         source = data['source']
-        prompt = "<|audio_bos|><|AUDIO|><|audio_eos|>" + data['prompt']
+        prompt = <|audio_bos|><|AUDIO|><|audio_eos|> + data['prompt']
         gt = data['gt']
         return {
             'audio': audio,
@@ -92,6 +99,7 @@ def collate_fn(inputs, processor):
     print(f"Getting the prompt: {input_texts[0]}" )
     source = [_['source'] for _ in inputs]
     gt = [_['gt'] for _ in inputs]
+
     audio_path = [_['audio'] for _ in inputs]
     input_audios = [ffmpeg_read(read_audio(_['audio']), sampling_rate=processor.feature_extractor.sampling_rate) for _ in inputs]
     inputs = processor(text=input_texts, audio=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
