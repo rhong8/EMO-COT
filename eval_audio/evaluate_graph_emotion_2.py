@@ -23,6 +23,17 @@ import soundfile as sf
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+# meld/preprocessing-meld.py mislabels cardiffnlp/twitter-roberta-base-sentiment's
+# neutral class (LABEL_1) as "objective" instead of "neutral" when building all_features.csv,
+# so every emotion graph's text[].sentiment field (and every relation edge derived from it)
+# carries the wrong word through to the prompt. Anchored on the "sentiment" JSON key so it
+# only touches that field's value, never free text (e.g. an utterance that happens to contain
+# the word "objective").
+_SENTIMENT_LABEL_FIX_RE = re.compile(r'("sentiment"\s*:\s*)"objective"')
+
+def fix_sentiment_label(prompt: str) -> str:
+    return _SENTIMENT_LABEL_FIX_RE.sub(r'\1"neutral"', prompt)
+
 # Maps dataset names to their .jsonl file paths.
 # Each .jsonl contains one utterance per line with audio path, prompt, source, and ground truth label.
 ds_collections = {
@@ -54,10 +65,11 @@ class AudioDataset(torch.utils.data.Dataset):
         data = json.loads(self.datas[idx].strip())
         audio = data['audio']
         source = data['source']
-        conversation = [ 
+        prompt_text = fix_sentiment_label(data['prompt'])
+        conversation = [
             {"role": "user", "content": [
                 {"type": "audio", "audio_url": audio},
-                {"type": "text", "text": f"{data['prompt']}"},
+                {"type": "text", "text": prompt_text},
             ]}]
         
         #prompt = f"<|audio_bos|><|AUDIO|><|audio_eos|>   {data['prompt']}"
