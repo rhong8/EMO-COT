@@ -14,7 +14,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import recall_score, f1_score
 import soundfile as sf
 
-from build_jsonl import parse_response
+
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -50,6 +50,29 @@ class AudioDataset(torch.utils.data.Dataset):
             'source': source,
             'gt': gt
         }
+
+
+
+def parse_response(response: str) -> str | None:
+    """Return a lowercase label letter (a-e) from an LLM response.
+
+    Accepts a bare letter (A-E), an emotion word (e.g. 'Neutral', 'Happy'),
+    or a longer reply containing either.  Returns None when no recognisable
+    token is found.
+    """
+    text = response.strip().lower()
+    # Prefer an explicit option letter so "The answer is B" maps to 'b'.
+    letter_match = re.search(r'\b([a-e])\b', text)
+    if letter_match:
+        return letter_match.group(1)
+    # Fall back to an emotion word anywhere in the response.
+    for token, label in _RESPONSE_MAP.items():
+        if re.search(r'\b' + token + r'\b', text):
+            return label
+    return None
+
+
+
 
 # Reads raw audio bytes from either a local file path or a URL.
 def read_audio(audio_path):
