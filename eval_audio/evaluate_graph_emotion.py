@@ -49,7 +49,7 @@ class AudioDataset(torch.utils.data.Dataset):
         data = json.loads(self.datas[idx].strip())
         audio = data['audio']
         source = data['source']
-        prompt = <|audio_bos|><|AUDIO|><|audio_eos|> + data['prompt']
+        prompt = f"<|audio_bos|><|AUDIO|><|audio_eos|>  {self.task}  {data['prompt']}"
         gt = data['gt']
         return {
             'audio': audio,
