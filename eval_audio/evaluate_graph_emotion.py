@@ -14,6 +14,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import recall_score, f1_score
 import soundfile as sf
 
+from build_jsonl import parse_response
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # Maps dataset names to their .jsonl file paths.
@@ -64,7 +66,7 @@ def read_audio(audio_path):
 # to produce tokenized tensors ready for GPU inference.
 def collate_fn(inputs, processor):
     input_texts = [_['prompt'] for _ in inputs]
-    #print(input_texts[0])
+    print(f"Getting the prompt: {input_texts[0]}" )
     source = [_['source'] for _ in inputs]
     gt = [_['gt'] for _ in inputs]
     audio_path = [_['audio'] for _ in inputs]
@@ -119,23 +121,31 @@ if __name__ == '__main__':
     sources = []
     rets = []
     audio_paths = []
+
+    i = 0
+
     for _, (inputs, audio_path, source, gt) in tqdm(enumerate(data_loader)):
         inputs = {k: v.to('cuda') if isinstance(v, torch.Tensor) else v for k, v in inputs.items()}
-        output_ids = model.generate(**inputs, max_new_tokens=2  0, min_new_tokens=1, do_sample=False)
+        output_ids = model.generate(**inputs, max_new_tokens=20, min_new_tokens=1, do_sample=False)
         output_ids = output_ids[:, inputs['input_ids'].size(1):]
         output = processor.batch_decode(output_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
         gts.extend(gt)
         rets.extend(output)
         sources.extend(source)
         audio_paths.extend(audio_path)
+        
+        print(f"File {i + 1}'s output: {output}    gt: {gt}")
+        i += 1
 
     # Assemble all predictions and ground truths into a results list and save to a timestamped JSON file.
     print(f"Evaluating {args.dataset} ...")
     results = []
     for gt, response, source, audio_path in zip(gts, rets, sources, audio_paths):
+
+        
         results.append({
             'gt': gt,
-            'response': response,
+            'response': parse_response(response) or response.strip().lower(),
             'source': source,
             'audio_path': audio_path,
         })
