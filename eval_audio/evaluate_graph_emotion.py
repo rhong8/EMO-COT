@@ -102,6 +102,12 @@ def collate_fn(inputs, processor):
 
     audio_path = [_['audio'] for _ in inputs]
     input_audios = [ffmpeg_read(read_audio(_['audio']), sampling_rate=processor.feature_extractor.sampling_rate) for _ in inputs]
+    print(f"Audio waveform shape: {input_audios[0].shape}")
+
+       
+    print(f"input_ids shape: {inputs['input_ids'].shape}")
+    print(f"Keys in inputs: {list(inputs.keys())}")
+    
     inputs = processor(text=input_texts, audio=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
     return inputs, audio_path, source, gt
 
