@@ -64,12 +64,15 @@ def read_audio(audio_path):
 # to produce tokenized tensors ready for GPU inference.
 def collate_fn(inputs, processor):
     input_texts = [_['prompt'] for _ in inputs]
+    #print(input_texts[0])
     source = [_['source'] for _ in inputs]
     gt = [_['gt'] for _ in inputs]
     audio_path = [_['audio'] for _ in inputs]
     input_audios = [ffmpeg_read(read_audio(_['audio']), sampling_rate=processor.feature_extractor.sampling_rate) for _ in inputs]
     inputs = processor(text=input_texts, audio=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
     return inputs, audio_path, source, gt
+
+
 
 if __name__ == '__main__':
     # Parse command line arguments for model checkpoint, dataset, batch size, workers, and random seed.
