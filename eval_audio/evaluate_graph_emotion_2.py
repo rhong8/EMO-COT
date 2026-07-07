@@ -29,10 +29,9 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # carries the wrong word through to the prompt. Anchored on the "sentiment" JSON key so it
 # only touches that field's value, never free text (e.g. an utterance that happens to contain
 # the word "objective").
-_SENTIMENT_LABEL_FIX_RE = re.compile(r'("sentiment"\s*:\s*)"objective"')
 
-def fix_sentiment_label(prompt: str) -> str:
-    return _SENTIMENT_LABEL_FIX_RE.sub(r'\1"neutral"', prompt)
+
+
 
 # Maps dataset names to their .jsonl file paths.
 # Each .jsonl contains one utterance per line with audio path, prompt, source, and ground truth label.
@@ -65,8 +64,10 @@ class AudioDataset(torch.utils.data.Dataset):
         data = json.loads(self.datas[idx].strip())
         audio = data['audio']
         source = data['source']
-        prompt_text = fix_sentiment_label(data['prompt'])
+        prompt_text = data['prompt']
         conversation = [
+            {"role": "system", "content": "You are an expert audio analyst. You will be given an audio file, and an emotion graph mapping the relationships between features and a predicted sentiment. Your task is to identify the emotion, only output letters A-E. (A) Neutral (B) Happy (C) Sad (D) Surprised (E) Angry\n"
+        "Answer ONLY with the option letter A, B, C, D, or E"}
             {"role": "user", "content": [
                 {"type": "audio", "audio_url": audio},
                 {"type": "text", "text": prompt_text},
