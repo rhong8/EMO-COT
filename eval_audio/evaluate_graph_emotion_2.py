@@ -67,7 +67,7 @@ class AudioDataset(torch.utils.data.Dataset):
         prompt_text = data['prompt']
         conversation = [
             {"role": "system", "content": "You are an expert audio analyst. You will be given an audio file, and an emotion graph mapping the relationships between features and a predicted sentiment. Your task is to identify the emotion, only output letters A-E. (A) Neutral (B) Happy (C) Sad (D) Surprised (E) Angry\n"
-        "Answer ONLY with the option letter A, B, C, D, or E"}
+        "Answer ONLY with the option letter A, B, C, D, or E"},
             {"role": "user", "content": [
                 {"type": "audio", "audio_url": audio},
                 {"type": "text", "text": prompt_text},
