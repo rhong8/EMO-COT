@@ -130,6 +130,7 @@ def get_relation_with_llm(utterance, audio_features, sentiment):
 
     For each feature, does it support, contradict, or is neutral to the predicted sentiment?
     Respond ONLY with valid JSON, no explanation, one answer per feature.
+    Only respond in the options: supports, contradicts, is neutral to.
     An example response:
     {{"pitch": "supports/contradicts/neutral", "speech_rate": "supports/contradicts/neutral",  "loudness": "supports/contradicts/neutral"}}
     """
@@ -238,10 +239,18 @@ def build_emotion_graph(emotion_graph_dir):
 
         
         #create cross-modal graph of feature to sentiment
+        '''
         relationships = [
-        {"from": "1", "to": "8", "relation": cross_modal.get('pitch', 'unknown')},
-        {"from": "2", "to": "8", "relation": cross_modal.get('speech_rate', 'unknown')},
-        {"from": "7", "to": "8", "relation": cross_modal.get('loudness', 'unknown')},
+        {"from": "pitch", "to": "sentiment", "relation": cross_modal.get('pitch', 'unknown')},
+        {"from": "speech rate", "to": "sentiment", "relation": cross_modal.get('speech_rate', 'unknown')},
+        {"from": "loudness", "to": "sentiment", "relation": cross_modal.get('loudness', 'unknown')},
+        ]
+        '''
+
+        relationships = [
+        {"from": "pitch", cross_modal.get('pitch', 'unknown'): "sentiment"},
+        {"from": "speech rate", cross_modal.get('speech_rate', 'unknown'): "sentiment"},
+        {"from": "loudness", cross_modal.get('loudness'): "sentiment"},
         ]
         emotion_graph = {
             "audio": audio_features,
