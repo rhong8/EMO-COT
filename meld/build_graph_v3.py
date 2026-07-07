@@ -2,18 +2,14 @@ import os
 import json
 import pandas as pd
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-
-from google.colab import userdata
+from transformers import AutoTokenizer, pipeline
 
 '''
-This file takes from an existing features .csv file, and creates the emotion graph based on that.
-It does not extract data in the loop. It also uses Groq API Llama LLM (free) to
-infer cross-modal relations, because its free and efficient. If you don't have a Groq API, you need to create a .env file and put it in there.
+This file takes from an existing features .csv file, and creates the emotion graphs in a .json format.
+It does not extract data in the loop. I efficient. It makes use of Qwen-3-8B to infer cross-modal relationships
+between acoustic features and the predicted sentiment.
 '''
 
-
-model_name = "Qwen/Qwen3-8B"
 
 # load the tokenizer and the model
 
@@ -21,9 +17,6 @@ model_name = "Qwen/Qwen3-8B"
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-8B")
 
 pipe = pipeline("text-generation", model="Qwen/Qwen3-8B", torch_dtype="auto", device_map="cuda")
-
-
-
 
 
 
@@ -114,22 +107,21 @@ def get_relation_with_llm(utterance, audio_features, sentiment):
     prompt = f"""
     You are analyzing speech emotion recognition features.
 
+    You are given the utterance, predicted sentiment, and acoustic features.
+
     Utterance: "{utterance}"
     Predicted sentiment: {sentiment}
 
     Acoustic features:
     - pitch: {audio_features[0]['value']}
     - speech_rate: {audio_features[1]['value']}
-    - jitter: {audio_features[2]['value']}
-    - shimmer: {audio_features[3]['value']}
-    - intensity: {audio_features[4]['value']}
-    - syllables: {audio_features[5]['value']}
     - loudness: {audio_features[6]['value']}
 
+
     For each feature, does it support, contradict, or is neutral to the predicted sentiment?
-    Respond ONLY with valid JSON, no explanation, one answer per feature:
+    Respond ONLY with valid JSON, no explanation, one answer per feature.
     An example response:
-    {{"pitch": "supports/contradicts/neutral", "speech_rate": "supports/contradicts/neutral", "jitter": "supports/contradicts/neutral", "shimmer": "supports/contradicts/neutral", "intensity": "supports/contradicts/neutral", "syllables": "supports/contradicts/neutral", "loudness": "supports/contradicts/neutral"}}
+    {{"pitch": "supports/contradicts/neutral", "speech_rate": "supports/contradicts/neutral",  "loudness": "supports/contradicts/neutral"}}
     """
 
     
@@ -178,11 +170,38 @@ def build_emotion_graph(emotion_graph_dir):
 
         utterance = row['Utterance']
         
-        predicted_sentiment = get_sentiment(filename)
+        predicted_sentiment = row['sentiment']
         
 
-        audio_features = extract_audio_features(filename)
-        keyword = extract_keyword(filename)
+        pitch = row['pitch']
+        speech_rate = row['speech_rate']
+        jitter = row['jitter']
+        shimmer = row['shimmer']
+        intensity = row['intensity']
+        syllables_rate = row['syllables_rate']
+        loudness = row['loudness']
+
+        pitch_label = "high" if pitch > 39.7 else "normal" if pitch >= 32.0 else "low"
+        speech_rate_label = "fast" if speech_rate > 4.965 else "normal" if speech_rate >= 1.2 else "slow"
+        jitter_label = "high" if jitter > 0.030 else "normal" if jitter >= 0.018 else "low"
+        shimmer_label = "high" if shimmer > 1.306 else "normal" if shimmer >= 1.025 else "low"
+        intensity_label = "high" if intensity > 0.0017 else "normal" if intensity >= 0.0007 else "low"
+        syllables_label = "high" if syllables_rate > 6.287 else "normal" if syllables_rate >= 1.294 else "low"
+        loudness_label = "loud" if loudness > 0.607 else "normal" if loudness >= 0.429 else "soft"
+
+        audio_features = [
+            {"id": "1", "feature": "pitch", "value": pitch_label},
+            {"id": "2", "feature": "speech_rate", "value": speech_rate_label},
+            {"id": "3", "feature": "jitter", "value": jitter_label},
+            {"id": "4", "feature": "shimmer", "value": shimmer_label},
+            {"id": "5", "feature": "intensity", "value": intensity_label},
+            {"id": "6", "feature": "syllables", "value": syllables_label},
+            {"id": "7", "feature": "loudness", "value": loudness_label},
+        ]
+
+
+
+        keyword = row['keyword']
 
 
         #the text node of the paper
@@ -212,10 +231,6 @@ def build_emotion_graph(emotion_graph_dir):
         relationships = [
         {"from": "1", "to": "8", "relation": cross_modal.get('pitch', 'unknown')},
         {"from": "2", "to": "8", "relation": cross_modal.get('speech_rate', 'unknown')},
-        {"from": "3", "to": "8", "relation": cross_modal.get('jitter', 'unknown')},
-        {"from": "4", "to": "8", "relation": cross_modal.get('shimmer', 'unknown')},
-        {"from": "5", "to": "8", "relation": cross_modal.get('intensity', 'unknown')},
-        {"from": "6", "to": "8", "relation": cross_modal.get('syllables', 'unknown')},
         {"from": "7", "to": "8", "relation": cross_modal.get('loudness', 'unknown')},
         ]
         emotion_graph = {
@@ -233,8 +248,6 @@ def build_emotion_graph(emotion_graph_dir):
 
 
 if __name__ == "__main__":
-    csv_path = "YOUR_GRAPH_PATH"
-    audio_dir = "YOUR_AUDIO_PATH"
     emotion_graph_dir = '/content/drive/MyDrive/MELD.Raw/emotion-graph-2'
     
     build_emotion_graph(emotion_graph_dir)
