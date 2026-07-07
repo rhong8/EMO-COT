@@ -7,26 +7,28 @@ from sklearn.metrics import accuracy_score, recall_score, f1_score
 parser = argparse.ArgumentParser()
 parser.add_argument('--file', default='/content/drive/MyDrive/MELD.Raw/meld_260703050157.json',
                      help='Path to the results JSON file')
+
+
 args = parser.parse_args()
 results_file = args.file
 
 emotion_to_letter = {
-    'neutral': 'A',
-    'happy': 'B',
-    'joy': 'B',
-    'sad': 'C',
-    'sadness': 'C',
-    'surprised': 'D',
-    'surprise': 'D',
-    'angry': 'E',
-    'anger': 'E',
+    'neutral': 'a',
+    'happy': 'b',
+    'joy': 'b',
+    'sad': 'c',
+    'sadness': 'c',
+    'surprised': 'd',
+    'surprise': 'd',
+    'angry': 'e',
+    'anger': 'e',
 }
 
 def extract_label(response):
     response_clean = response.strip().lower()
     match = re.search(r'\b([a-e])\b', response_clean)
     if match:
-        return match.group(1).upper()
+        return match.group(1).lower()
     for emotion, letter in emotion_to_letter.items():
         if emotion in response_clean:
             return letter
