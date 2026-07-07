@@ -3,12 +3,22 @@ import json
 import pandas as pd
 import torch
 from transformers import AutoTokenizer, pipeline
-
+import argparse
 '''
 This file takes from an existing features .csv file, and creates the emotion graphs in a .json format.
 It does not extract data in the loop. I efficient. It makes use of Qwen-3-8B to infer cross-modal relationships
 between acoustic features and the predicted sentiment.
 '''
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--dir', default='/content/drive/MyDrive/MELD.Raw/emotion-graph-3',
+                     help='Path to the saved emotion graphs')
+
+
+args = parser.parse_args()
+emotion_graph_dir = args.dir
+
 
 
 # load the tokenizer and the model
@@ -248,6 +258,6 @@ def build_emotion_graph(emotion_graph_dir):
 
 
 if __name__ == "__main__":
-    emotion_graph_dir = '/content/drive/MyDrive/MELD.Raw/emotion-graph-2'
+   
     
     build_emotion_graph(emotion_graph_dir)
