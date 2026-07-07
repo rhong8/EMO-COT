@@ -1,9 +1,14 @@
+import argparse
 import json
 import re
 from collections import Counter
 from sklearn.metrics import accuracy_score, recall_score, f1_score
 
-results_file = '/content/drive/MyDrive/MELD.Raw/meld_260703050157.json'  # replace with your actual filename
+parser = argparse.ArgumentParser()
+parser.add_argument('--file', default='/content/drive/MyDrive/MELD.Raw/meld_260703050157.json',
+                     help='Path to the results JSON file')
+args = parser.parse_args()
+results_file = args.file
 
 emotion_to_letter = {
     'neutral': 'A',
