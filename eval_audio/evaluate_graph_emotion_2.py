@@ -156,6 +156,13 @@ def collate_fn(inputs, processor):
     #print(f"input_ids shape: {inputs['input_ids'].shape}")
     #print(f"Keys in inputs: {list(inputs.keys())}")
 
+
+
+    print(inputs.keys())
+    print("input_features" in inputs, inputs.get("input_features", None) is not None and inputs["input_features"].shape)
+    print("feature_attention_mask" in inputs, inputs.get("feature_attention_mask", None) is not None and inputs["feature_attention_mask"].sum(-1))
+
+    #Key contention point: audios for older transformers, audio for newer transformers.
     inputs = processor(text=input_texts, audio=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
     return inputs, audio_path, source, gt
 
