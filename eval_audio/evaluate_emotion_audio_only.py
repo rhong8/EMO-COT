@@ -149,10 +149,12 @@ def collate_fn(inputs, processor):
     #Key contention point: audios for older transformers, audio for newer transformers.
     inputs = processor(text=input_texts, audio=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
 
+    print(f"Prompt contains audio token: {'audio_bos' in input_texts[0] or 'AUDIO' in input_texts[0]}")
+    '''
     print(inputs.keys())
     print("input_features" in inputs, inputs.get("input_features", None) is not None and inputs["input_features"].shape)
     print("feature_attention_mask" in inputs, inputs.get("feature_attention_mask", None) is not None and inputs["feature_attention_mask"].sum(-1))
-
+    '''
     return inputs, audio_path, source, gt
 
 
