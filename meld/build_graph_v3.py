@@ -252,6 +252,7 @@ def build_emotion_graph(emotion_graph_dir):
         {"from": "speech rate", cross_modal.get('speech_rate', 'unknown'): "sentiment"},
         {"from": "loudness", cross_modal.get('loudness'): "sentiment"},
         ]
+        
         emotion_graph = {
             "audio": audio_features,
             "text": text_data,

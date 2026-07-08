@@ -1,12 +1,46 @@
+import argparse
 import os
 import json
 import re
+from datetime import datetime
 import pandas as pd
 
 wav_dir = '/content/drive/MyDrive/MELD.Raw/output_repeated_splits_test_wav'
-emotion_graph_dir = '/content/drive/MyDrive/MELD.Raw/emotion-graph-2'
+
+
+
 ground_truth = pd.read_csv('/content/drive/MyDrive/MELD.Raw/test_sent_emo.csv')
-jsonl_path = '/content/drive/MyDrive/MELD.Raw/meld_eval.jsonl'
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--emotion_dir', default='/content/drive/MyDrive/MELD.Raw/emotion-graph-3',
+                     help='Path to the saved emotion graphs')
+
+parser.add_argument('--output_dir', default='/content/drive/MyDrive/MELD.Raw',
+                     help='Directory to write the versioned meld_eval jsonl file to')
+parser.add_argument('--filename', default='meld_eval.jsonl',
+                     help='Base filename to version and write to (e.g. meld_eval.jsonl)')
+args = parser.parse_args()
+
+emotion_graph_dir = args.emotion_dir
+
+os.makedirs(args.output_dir, exist_ok=True)
+
+# Build a versioned output filename, e.g. meld_eval.jsonl_7_7_26_3, where the
+# trailing counter is one past the highest existing version for today's date
+# already present in output_dir.
+now = datetime.now()
+date_str = f"{now.month}_{now.day}_{now.strftime('%y')}"
+_version_re = re.compile(rf'^{re.escape(args.filename)}_{re.escape(date_str)}_(\d+)$')
+existing_versions = [
+    int(m.group(1))
+    for fname in os.listdir(args.output_dir)
+    if (m := _version_re.match(fname))
+]
+version = max(existing_versions, default=0) + 1
+jsonl_path = os.path.join(args.output_dir, f"{args.filename}_{date_str}_{version}")
+
+
 
 # Maps both emotion words and option letters to the canonical lowercase label letter.
 _RESPONSE_MAP = {

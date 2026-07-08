@@ -72,6 +72,8 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--num-workers', type=int, default=1)
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--output_dir', type=str, default='.',
+                         help='Directory to save the results JSON file to')
     args = parser.parse_args()
 
     # Load model and processor
@@ -125,7 +127,8 @@ if __name__ == '__main__':
             'audio_path': audio_path,
         })
     time_prefix = time.strftime('%y%m%d%H%M%S', time.localtime())
-    results_file = f'{args.dataset}_{time_prefix}.json'
+    os.makedirs(args.output_dir, exist_ok=True)
+    results_file = os.path.join(args.output_dir, f'{args.dataset}_{time_prefix}.json')
     json.dump(results, open(results_file, 'w'))
     results_dict = {}
     for item in tqdm(results):
