@@ -21,6 +21,7 @@ import soundfile as sf
 
 
 
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # meld/preprocessing-meld.py mislabels cardiffnlp/twitter-roberta-base-sentiment's
@@ -32,11 +33,18 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--eval', default='/content/drive/MyDrive/MELD.Raw/meld_eval.jsonl',
+                     help='Path to the saved emotion graphs')
+
+
+args = parser.parse_args()
+eval_path = args.eval
 
 # Maps dataset names to their .jsonl file paths.
 # Each .jsonl contains one utterance per line with audio path, prompt, source, and ground truth label.
 ds_collections = {
-    'meld': {'path': '/content/drive/MyDrive/MELD.Raw/meld_eval.jsonl'},
+    'meld': {'path': eval_path},
     #'iemocap': {'path': 'ser/iemocap_eval.jsonl'},
     #'merr_test1': {'path': 'ser/merr_eval_test1.jsonl'},
     #'merr_test2': {'path': 'ser/merr_eval_test2.jsonl'}

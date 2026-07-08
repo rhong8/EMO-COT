@@ -38,6 +38,8 @@ existing_versions = [
     if (m := _version_re.match(fname))
 ]
 version = max(existing_versions, default=0) + 1
+
+
 jsonl_path = os.path.join(args.output_dir, f"{args.filename}_{date_str}_{version}")
 
 
