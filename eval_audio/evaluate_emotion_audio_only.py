@@ -147,7 +147,7 @@ def collate_fn(inputs, processor):
     print(f"Audio waveform shape: {input_audios[0].shape}")
 
     #Key contention point: audios for older transformers, audio for newer transformers.
-    inputs = processor(text=input_texts, audio=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
+    inputs = processor(text=input_texts, audios=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
 
     print(f"Prompt contains audio token: {'audio_bos' in input_texts[0] or 'AUDIO' in input_texts[0]}")
     '''
