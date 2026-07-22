@@ -1,4 +1,5 @@
 import argparse
+import inspect
 import json
 import os
 import random
@@ -78,6 +79,8 @@ def resolve_audio_path(audio_path):
         return os.path.join(MELD_AUDIO_ROOT, audio_path)
     return audio_path
 
+_diagnosed = False
+
 # 数据整理函数
 def collate_fn(inputs, processor):
     input_texts = []
@@ -115,6 +118,18 @@ def collate_fn(inputs, processor):
     
     # 使用 processor 处理输入
     inputs = processor(text=input_texts, audios=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
+
+    # 诊断：确认音频是否真的被 processor 接收，而不只是被静默丢弃（audios/audio 参数名可能因 transformers 版本而不同）
+    global _diagnosed
+    if not _diagnosed:
+        _diagnosed = True
+        print(f"[diag] processor.__call__ signature: {inspect.signature(processor.__call__)}")
+        print(f"[diag] inputs.keys(): {list(inputs.keys())}")
+        print(f"[diag] has input_features: {'input_features' in inputs}",
+              inputs.get('input_features').shape if inputs.get('input_features') is not None else None)
+        print(f"[diag] has feature_attention_mask: {'feature_attention_mask' in inputs}",
+              inputs.get('feature_attention_mask').sum(-1) if inputs.get('feature_attention_mask') is not None else None)
+
     return inputs, audio_path, source, gt
 
 if __name__ == '__main__':
