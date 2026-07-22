@@ -117,7 +117,7 @@ def collate_fn(inputs, processor):
         input_texts.append(new_prompt)
     
     # 使用 processor 处理输入
-    inputs = processor(text=input_texts, audios=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
+    inputs = processor(text=input_texts, audio=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
 
     # 诊断：确认音频是否真的被 processor 接收，而不只是被静默丢弃（audios/audio 参数名可能因 transformers 版本而不同）
     global _diagnosed
