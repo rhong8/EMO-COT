@@ -35,6 +35,9 @@ ds_collections = {
 
 
 MELD_PATH = '/content/drive/MyDrive/EMO-COT-shortcut/meld/'
+# meld_eval.jsonl stores audio paths like 'meld/MELD.Raw/...' relative to this root,
+# not relative to MELD_PATH itself (which already ends in 'meld/').
+MELD_AUDIO_ROOT = '/content/drive/MyDrive/EMO-COT-shortcut/'
 
 # 数据集类
 class AudioDataset(torch.utils.data.Dataset):
@@ -67,13 +70,21 @@ def read_audio(audio_path):
             inputs = f.read()
     return inputs
 
+# 解析音频路径：数据集里存的是相对路径，需要拼上 Drive 快捷方式的根目录
+def resolve_audio_path(audio_path):
+    if audio_path.startswith("http://") or audio_path.startswith("https://") or os.path.isabs(audio_path):
+        return audio_path
+    if args.dataset == "meld":
+        return os.path.join(MELD_AUDIO_ROOT, audio_path)
+    return audio_path
+
 # 数据整理函数
 def collate_fn(inputs, processor):
     input_texts = []
     source = [_['source'] for _ in inputs]
     gt = [_['gt'] for _ in inputs]
-    audio_path = [_['audio'] for _ in inputs]
-    input_audios = [ffmpeg_read(read_audio(_['audio']), sampling_rate=processor.feature_extractor.sampling_rate) for _ in inputs]
+    audio_path = [resolve_audio_path(_['audio']) for _ in inputs]
+    input_audios = [ffmpeg_read(read_audio(p), sampling_rate=processor.feature_extractor.sampling_rate) for p in audio_path]
     
     for i, item in enumerate(inputs):
         # 从音频路径中提取标识符，例如 dia0_utt0
