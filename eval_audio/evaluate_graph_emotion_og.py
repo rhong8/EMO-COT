@@ -94,7 +94,7 @@ def collate_fn(inputs, processor):
         if args.dataset == "iemocap":
             emotion_graph_path = os.path.join('iemocap/emotion_graph', f'emotion_graph_{identifier}.json')
         elif args.dataset == "meld":
-            emotion_graph_path = os.path.join(MELD_PATH, f'emotion_graph_{identifier}.json')
+            emotion_graph_path = os.path.join(MELD_PATH, 'emotion_graph', f'emotion_graph_{identifier}.json')
         elif args.dataset == "merr_test1":
             emotion_graph_path = os.path.join('MERR_toolbox/EmotionGraph/test1', f'{identifier}.json')
         else:
