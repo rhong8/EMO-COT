@@ -33,14 +33,6 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 
-parser = argparse.ArgumentParser()
-#parser.add_argument('--eval', type = str, default='/content/drive/MyDrive/MELD.Raw/meld_eval_7_8.jsonl',
-                     #help='Path to the saved emotion graphs')
-
-
-args = parser.parse_args()
-eval_path = args.eval
-
 # Maps dataset names to their .jsonl file paths.
 # Each .jsonl contains one utterance per line with audio path, prompt, source, and ground truth label.
 ds_collections = {
@@ -49,6 +41,29 @@ ds_collections = {
     #'merr_test1': {'path': 'ser/merr_eval_test1.jsonl'},
     #'merr_test2': {'path': 'ser/merr_eval_test2.jsonl'}
 }
+
+# Same jsonl/emotion-graph source og.py uses, so both scripts pull identical graph content.
+EMOTION_GRAPH_DIR = '/content/drive/MyDrive/EMO-COT/MELD.Raw/emotion-graph-3/'
+
+# Defensive: strips a build_jsonl.py-style embedded "Emotion Graph:\n{...}\n" block if the
+# jsonl's 'prompt' field already has one baked in, so the freshly-loaded graph below isn't
+# duplicated alongside it. No-op if the prompt field has no such prefix (e.g. og.py's jsonl,
+# which stores plain task text).
+_EMBEDDED_GRAPH_RE = re.compile(r'^Emotion Graph:\n[^\n]*\n')
+
+def strip_embedded_graph(prompt_text):
+    return _EMBEDDED_GRAPH_RE.sub('', prompt_text, count=1)
+
+def load_emotion_graph_str(audio_path):
+    identifier = os.path.basename(audio_path).replace('.wav', '')
+    graph_path = os.path.join(EMOTION_GRAPH_DIR, f'emotion_graph_{identifier}.json')
+    try:
+        with open(graph_path, 'r', encoding='utf-8') as f:
+            graph = json.load(f)
+        return json.dumps(graph, ensure_ascii=False)
+    except Exception as e:
+        print(f"Failed to load emotion graph: {graph_path}, error: {e}")
+        return "{}"
 
 
 
@@ -74,7 +89,9 @@ class AudioDataset(torch.utils.data.Dataset):
         data = json.loads(self.datas[idx].strip())
         audio = data['audio']
         source = data['source']
-        prompt_text = data['prompt']
+        task_text = strip_embedded_graph(data['prompt'])
+        emotion_graph_str = load_emotion_graph_str(audio)
+        prompt_text = f"Emotion Graph:\n{emotion_graph_str}\n{task_text}"
         conversation = [
             {"role": "system", "content": "You are an expert audio analyst. You will be given an audio file, and an emotion graph mapping the relationships between features and a predicted sentiment. Your task is to identify the emotion, only output letters A-E. (A) Neutral (B) Happy (C) Sad (D) Surprised (E) Angry\n"
         "Answer ONLY with the option letter A, B, C, D, or E"},
@@ -136,6 +153,15 @@ def read_audio(audio_path):
             inputs = f.read()
     return inputs
 
+# ser/meld_eval.jsonl stores audio paths like 'meld/MELD.Raw/...' relative to this root
+# (not relative to EMOTION_GRAPH_DIR's parent, which already ends in 'meld/').
+MELD_AUDIO_ROOT = '/content/drive/MyDrive/EMO-COT-shortcut/'
+
+def resolve_audio_path(audio_path):
+    if audio_path.startswith("http://") or audio_path.startswith("https://") or os.path.isabs(audio_path):
+        return audio_path
+    return os.path.join(MELD_AUDIO_ROOT, audio_path)
+
 # Collation function called by DataLoader for each batch.
 # Reads and decodes raw audio for each sample using ffmpeg, then passes both
 # the text prompts and audio waveforms through the Qwen2-Audio processor
@@ -148,9 +174,9 @@ def collate_fn(inputs, processor):
     source = [_['source'] for _ in inputs]
     gt = [_['gt'] for _ in inputs]
 
-    audio_path = [_['audio'] for _ in inputs]
-    input_audios = [ffmpeg_read(read_audio(_['audio']), sampling_rate=processor.feature_extractor.sampling_rate) for _ in inputs]
-    print(f"Audio waveform shape: {input_audios[0].shape}")
+    audio_path = [resolve_audio_path(_['audio']) for _ in inputs]
+    input_audios = [ffmpeg_read(read_audio(p), sampling_rate=processor.feature_extractor.sampling_rate) for p in audio_path]
+    #print(f"Audio waveform shape: {input_audios[0].shape}")
 
        
 
@@ -159,10 +185,11 @@ def collate_fn(inputs, processor):
     #Key contention point: audios for older transformers, audio for newer transformers.
     inputs = processor(text=input_texts, audio=input_audios, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
 
+    '''
     print(inputs.keys())
     print("input_features" in inputs, inputs.get("input_features", None) is not None and inputs["input_features"].shape)
     print("feature_attention_mask" in inputs, inputs.get("feature_attention_mask", None) is not None and inputs["feature_attention_mask"].sum(-1))
-
+    '''
     return inputs, audio_path, source, gt
 
 
@@ -225,7 +252,7 @@ if __name__ == '__main__':
         sources.extend(source)
         audio_paths.extend(audio_path)
         
-        print(f"File {i + 1}'s output: {output}    gt: {gt}")
+        print(f"File {i + 1}'s output: {output[0].strip().lower()}    gt: {gt}")
         i += 1
 
     # Assemble all predictions and ground truths into a results list and save to a timestamped JSON file.
