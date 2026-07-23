@@ -34,8 +34,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--eval', type = str, default='/content/drive/MyDrive/MELD.Raw/meld_eval.jsonl',
-                     help='Path to the saved emotion graphs')
+#parser.add_argument('--eval', type = str, default='/content/drive/MyDrive/MELD.Raw/meld_eval_7_8.jsonl',
+                     #help='Path to the saved emotion graphs')
 
 
 args = parser.parse_args()
@@ -44,7 +44,7 @@ eval_path = args.eval
 # Maps dataset names to their .jsonl file paths.
 # Each .jsonl contains one utterance per line with audio path, prompt, source, and ground truth label.
 ds_collections = {
-    'meld': {'path': '/content/drive/MyDrive/MELD.Raw/meld_eval_7_8.jsonl'},
+    'meld': {'path': '/content/drive/MyDrive/EMO-COT-shortcut/ser/meld_eval.jsonl'},
     #'iemocap': {'path': 'ser/iemocap_eval.jsonl'},
     #'merr_test1': {'path': 'ser/merr_eval_test1.jsonl'},
     #'merr_test2': {'path': 'ser/merr_eval_test2.jsonl'}
