@@ -12,7 +12,7 @@ between acoustic features and the predicted sentiment.
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dir', default='/content/drive/MyDrive/MELD.Raw/emotion-graph-3',
+parser.add_argument('--dir', default='/content/drive/MyDrive/MELD.Raw/emotion-graph-4',
                      help='Path to the saved emotion graphs')
 
 
@@ -108,7 +108,7 @@ def get_sentiment(filename):
     return row_features['sentiment']
 
 
-# Function to generate relationships using LLM, using Groq API. Need to generate a .json of 7 values
+# Function to generate relationships using LLM Need to generate a .json of 7 values
 #audio_feature: pitch, volume, intensity, etc
 #feature_label: low, normal, high / slow, normal, fast
 def get_relation_with_llm(utterance, audio_features, sentiment):
@@ -128,12 +128,13 @@ def get_relation_with_llm(utterance, audio_features, sentiment):
     - loudness: {audio_features[6]['value']}
 
 
-    For each feature, does it support, contradict, or is neutral to the predicted sentiment?
+    For each feature, does it support, contradict, or is objective to the predicted sentiment?
     Respond ONLY with valid JSON, no explanation, one answer per feature.
-    Only respond in the options: supports, contradicts, is neutral to.
+    Only respond in the options: supports, contradicts, or objective.
     An example response:
-    {{"pitch": "supports/contradicts/neutral", "speech_rate": "supports/contradicts/neutral",  "loudness": "supports/contradicts/neutral"}}
+    {{"pitch": "supports/contradicts/objective", "speech_rate": "supports/contradicts/objective",  "loudness": "supports/contradicts/objective"}}
     """
+
 
     
     messages = [
@@ -182,6 +183,8 @@ def build_emotion_graph(emotion_graph_dir):
         utterance = row['Utterance']
         
         predicted_sentiment = row['sentiment']
+        if predicted_sentiment == 'neutral':
+            predicted_sentiment = 'objective' #replacing it with objective again
         
 
         pitch = row['pitch']
@@ -219,7 +222,7 @@ def build_emotion_graph(emotion_graph_dir):
         text_data = [
             {
                 "id": "8",
-                "utterance": utterance,
+                "content": utterance,
                 "keyword": keyword,
                 "sentiment": predicted_sentiment,
             }
@@ -248,9 +251,9 @@ def build_emotion_graph(emotion_graph_dir):
         '''
 
         relationships = [
-        {"from": "pitch", cross_modal.get('pitch', 'unknown'): "sentiment"},
-        {"from": "speech rate", cross_modal.get('speech_rate', 'unknown'): "sentiment"},
-        {"from": "loudness", cross_modal.get('loudness'): "sentiment"},
+        {"from": "1", "to": "8",  "relation": cross_modal.get('pitch', 'unknown')},
+        {"from": "2", "to": "8",  "relation": cross_modal.get('speech_rate', 'unknown')},
+        {"from": "3", "to": "8",  "relation": cross_modal.get('loudness', 'unknown')},
         ]
         
         emotion_graph = {
