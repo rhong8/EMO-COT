@@ -141,7 +141,7 @@ def read_audio(audio_path):
 # the text prompts and audio waveforms through the Qwen2-Audio processor
 # to produce tokenized tensors ready for GPU inference.
 def collate_fn(inputs, processor):
-    input_texts = [_['prompt'] for _ in inputs]
+    #input_texts = [_['prompt'] for _ in inputs]
     input_texts = [processor.apply_chat_template( c['prompt'], add_generation_prompt = True, tokenize = False) for c in inputs]
     #text = processor.apply_chat_template(conversation, add_generation_prompt=True, tokenize=False)
     print(f"Getting the prompt: {input_texts[0]}" )
@@ -236,7 +236,7 @@ if __name__ == '__main__':
         
         results.append({
             'gt': gt,
-            'response': parse_response(response) or response.strip().lower(),
+            'response': response.strip().lower(), #directly strip and lower the
             'source': source,
             'audio_path': audio_path,
         })
