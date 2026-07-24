@@ -43,7 +43,7 @@ ds_collections = {
 }
 
 # Same jsonl/emotion-graph source og.py uses, so both scripts pull identical graph content.
-EMOTION_GRAPH_DIR = '/content/drive/MyDrive/MELD.Raw/emotion-graph4/'
+EMOTION_GRAPH_DIR = '/content/drive/MyDrive/MELD.Raw/emotion-graph-4/'
 
 # Defensive: strips a build_jsonl.py-style embedded "Emotion Graph:\n{...}\n" block if the
 # jsonl's 'prompt' field already has one baked in, so the freshly-loaded graph below isn't
@@ -93,8 +93,11 @@ class AudioDataset(torch.utils.data.Dataset):
         emotion_graph_str = load_emotion_graph_str(audio)
         prompt_text = f"Emotion Graph:\n{emotion_graph_str}\n{task_text}"
         conversation = [
-            {"role": "system", "content": "You are an expert audio analyst. You will be given an audio file, and an emotion graph mapping the relationships between features and a predicted sentiment. Your task is to identify the emotion, only output letters A-E. (A) Neutral (B) Happy (C) Sad (D) Surprised (E) Angry\n"
+            '''
+            {"role": "system", "content": "You are an expert audio analyst. You will be given an audio file, and you will identify the emotion"
         "Answer ONLY with the option letter A, B, C, D, or E"},
+            '''
+            
             {"role": "user", "content": [
                 {"type": "audio", "audio_url": audio},
                 {"type": "text", "text": prompt_text},
