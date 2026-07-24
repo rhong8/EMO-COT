@@ -179,6 +179,8 @@ if __name__ == '__main__':
         sources.extend(source)
         audio_paths.extend(audio_path)
 
+        print(f"From source: {source}: Predicted: {output} Gt: {gt}")
+
     # 评估结果
     print(f"Evaluating {args.dataset} ...")
     results = []
