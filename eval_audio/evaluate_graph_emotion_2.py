@@ -92,12 +92,12 @@ class AudioDataset(torch.utils.data.Dataset):
         task_text = strip_embedded_graph(data['prompt'])
         emotion_graph_str = load_emotion_graph_str(audio)
         prompt_text = f"Emotion Graph:\n{emotion_graph_str}\n{task_text}"
-        conversation = [
-            '''
+         '''
             {"role": "system", "content": "You are an expert audio analyst. You will be given an audio file, and you will identify the emotion"
         "Answer ONLY with the option letter A, B, C, D, or E"},
             '''
-            
+        
+        conversation = [
             {"role": "user", "content": [
                 {"type": "audio", "audio_url": audio},
                 {"type": "text", "text": prompt_text},
