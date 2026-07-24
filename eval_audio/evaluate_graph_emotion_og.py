@@ -33,7 +33,7 @@ ds_collections = {
 }
 
 
-
+dump_path = '/content/drive/MyDrive/MELD.Raw/'
 
 MELD_PATH = '/content/drive/MyDrive/EMO-COT-shortcut/meld/'
 # meld_eval.jsonl stores audio paths like 'meld/MELD.Raw/...' relative to this root,
@@ -190,11 +190,12 @@ if __name__ == '__main__':
             'audio_path': audio_path,
         })
     time_prefix = time.strftime('%y%m%d%H%M%S', time.localtime())
-    results_file = f'{args.dataset}_{time_prefix}.json'
+    os.makedirs(dump_path, exist_ok=True)
+    results_file = os.path.join(dump_path, f'{args.dataset}_{time_prefix}.json')
     json.dump(results, open(results_file, 'w'), ensure_ascii=False)
 
     # 保存为 txt 文件
-    txt_file = os.path.join(f"{args.dataset}_{time_prefix}_results.txt")
+    txt_file = os.path.join(dump_path, f"{args.dataset}_{time_prefix}_results.txt")
     with open(txt_file, "w", encoding="utf-8") as f:
         for item in results:
             audio = item["audio_path"]
