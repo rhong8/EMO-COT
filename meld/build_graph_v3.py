@@ -161,6 +161,7 @@ def get_relation_with_llm(utterance, audio_features, sentiment):
 #Builds the full emotion graph based on files from all_features.csv and saves it to emotion_graph_dir
 def build_emotion_graph(emotion_graph_dir):
     print("Building the emotion graph...")
+    os.makedirs(emotion_graph_dir, exist_ok=True)
     #existing_files = os.listdir(emotion_graph_dir)
     i = 1
     pipe.model.generation_config.max_length = None #surpress the warning that max_new_tokens take precedence
@@ -253,7 +254,7 @@ def build_emotion_graph(emotion_graph_dir):
         relationships = [
         {"from": "1", "to": "8",  "relation": cross_modal.get('pitch', 'unknown')},
         {"from": "2", "to": "8",  "relation": cross_modal.get('speech_rate', 'unknown')},
-        {"from": "3", "to": "8",  "relation": cross_modal.get('loudness', 'unknown')},
+        {"from": "7", "to": "8",  "relation": cross_modal.get('loudness', 'unknown')},
         ]
         
         emotion_graph = {

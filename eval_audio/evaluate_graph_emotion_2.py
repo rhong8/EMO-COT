@@ -43,7 +43,7 @@ ds_collections = {
 }
 
 # Same jsonl/emotion-graph source og.py uses, so both scripts pull identical graph content.
-EMOTION_GRAPH_DIR = '/content/drive/MyDrive/EMO-COT/MELD.Raw/emotion-graph-3/'
+EMOTION_GRAPH_DIR = '/content/drive/MyDrive/EMO-COT/MELD.Raw/emotion-graph-4/'
 
 # Defensive: strips a build_jsonl.py-style embedded "Emotion Graph:\n{...}\n" block if the
 # jsonl's 'prompt' field already has one baked in, so the freshly-loaded graph below isn't
